@@ -42,61 +42,43 @@ Two things worth knowing before you pick numbers:
   a **miss**.
 
 ---
-## 1.
+## 1. False positives on plain human writing
 
-<!-- Your criterion. It must name a number. -->
+Of 10 short (3–5 sentence) pieces of plain, ordinary writing that I compose myself — common words, short sentences, no attempt to sound formal — at most 2 are labelled high-confidence AI, holding across 3 trials.
 
-
-
-**Why this target:**
-
-
+**Why this target:** this is the exact blind spot signal one names in its own docstring: it rewards common words in short sentences regardless of who wrote them, so plain writers are the ones most likely to get falsely accused. On a writing site, a wrong accusation costs the writer far more than a missed detection costs the site, so I'm deliberately not treating the two error types as equally bad. I picked 2 of 10 rather than 0 or 1 because the blind spot is structural, not a bug I can fully tune away — a target of 0 would be a number I'm certain to miss for a reason that has nothing to do with my code being wrong, which teaches me nothing. 2 of 10 is a real bar I have to actually defend against with my combining rule and thresholds, not a number chosen to be impossible to fail by design.
 
 ---
 
-## 2.
+## 2. Score spread between the obvious cases
 
-<!-- Your criterion. -->
+A clearly AI-generated paragraph and a clearly human, casually-written paragraph score at least 0.40 apart on the combined 0–1 score, holding across 3 trials.
 
-
-
-**Why this target:**
-
-
+**Why this target:** 0.40 is close to half the available range. If the system can't put real daylight between the two *easy* cases, the harder calibration cases (plain human writing, lightly-edited AI) don't matter yet — there's nothing to protect against misclassifying if the signal barely discriminates at the extremes in the first place. This has to come before criteria 1 and 5 can mean anything.
 
 ---
 
-## 3.
+## 3. Every label is reachable
 
-<!-- Your criterion. -->
+Each of the three labels — `human`, `unsure`, `ai` — is produced by at least one real submission I construct myself, in every one of 3 trials.
 
-
-
-**Why this target:**
-
-
+**Why this target:** `config.py`'s own comments flag a real, specific way this can silently fail: a weighted average can only land between its two inputs, so while one signal is still a stub returning a constant, an entire label can become mathematically unreachable no matter what text anyone submits. This isn't a hypothetical edge case for this project — it's a documented risk in the exact code I'm about to write — so I'm holding myself to proving all three labels actually exist, not assuming they do because the thresholds look reasonable on paper.
 
 ---
 
-## 4.
+## 4. The appeal path is reliable
 
-<!-- Your criterion. -->
+A `/appeal` call with a valid `content_id` changes that entry's status to `under_review` and shows up in `GET /log` with the new status, in 3 of 3 trials (100%).
 
-
-
-**Why this target:**
-
-
+**Why this target:** unlike the two signals, this is plain application logic with no model call and no reason to vary run to run — find the entry, change its status, write it, confirm it. There's no legitimate reason for this to work sometimes and not others, so 100% is the right bar, not a generous one. This is the one thing standing between a wrong accusation and nothing at all, so it failing silently even occasionally would be worse than most other misses in this project.
 
 ---
 
-## 5.
+## 5. Bad input never crashes the service
 
-<!-- Your criterion. -->
+Submitting `text` that's missing, an empty string, or over 5,000 words never returns a `500` — each case gets a clear `4xx` response naming what's wrong, in 3 of 3 trials.
 
-
-
-**Why this target:**
+**Why this target:** `app.py`'s own docstring names a crash on malformed input as one of the most common real failures a service like this has. It's also not just a robustness nicety here: a writer who pastes in something a little unusual — too short, a huge document, a copy-paste glitch that drops the text field — is a real person who deserves a message telling them what to fix, not a stack trace that looks like the whole service is broken. 100% because, like criterion 4, this is deterministic code with no model variance involved — missing it even once means the handler has a real bug, not bad luck.
 
 
 
