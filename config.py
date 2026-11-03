@@ -46,6 +46,11 @@ DETECTOR_MODEL = os.getenv("AI201_DETECTOR_MODEL", "gpt2")
 # 300 words, which is enough for the signal to mean something.
 DETECTOR_MAX_TOKENS = 400
 
+# criteria.md #5: bad input (missing, empty, or enormous) has to get a clear
+# 400, never a 500. ~5,000 words at ~6 characters/word (word + space), rounded
+# up — the limit the route itself checks before anything gets scored.
+MAX_SUBMISSION_CHARS = 30_000
+
 
 # ─── Scoring (Milestone 4) ───────────────────────────────────────────────────
 # How much each signal counts toward the combined score.

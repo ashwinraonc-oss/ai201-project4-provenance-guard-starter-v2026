@@ -1,0 +1,2 @@
+{"timestamp": "2026-11-03T22:21:03+00:00", "content_id": "5dee14a5-d796-48e2-ba2d-9f0fd2aeb872", "creator_id": "u1", "guess": null, "model_score": 0.5563, "style_score": null, "combined_score": null, "label": "placeholder — scoring.combine_signals and score_to_label aren't wired in yet", "status": "decided"}
+{"timestamp": "2026-11-03T22:21:25+00:00", "creator_id": "u1", "event": "rejected", "status": "rejected", "reason": "missing_text"}

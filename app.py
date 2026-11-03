@@ -199,17 +199,89 @@ def submit():
     what should this do when `text` is missing, empty, or enormous? A crash on
     a malformed input is one of the most common real failures there is.
     """
-    payload = request.get_json(silent=True) or {}
+    import detector
 
-    # TODO: delete this and build the route.
+    payload = request.get_json(silent=True) or {}
+    text = payload.get("text")
+    creator_id = payload.get("creator_id")
+
+    # Milestone 3's own TODO: decide what bad input does rather than let it
+    # crash. Criterion 5 holds this to no 500s, ever. Every rejection still
+    # gets logged — an attack that shows up only as an absence is one you'll
+    # never find, and that applies to malformed-input probing too, not just
+    # unit 8's rate limiting.
+    if not isinstance(text, str) or not text.strip():
+        audit.log_rejection(creator_id=creator_id or "unknown", reason="missing_text")
+        return jsonify({
+            "error": "bad_request",
+            "message": "`text` is required and can't be empty.",
+        }), 400
+    if not isinstance(creator_id, str) or not creator_id.strip():
+        audit.log_rejection(creator_id="unknown", reason="missing_creator_id")
+        return jsonify({
+            "error": "bad_request",
+            "message": "`creator_id` is required and can't be empty.",
+        }), 400
+    if len(text) > config.MAX_SUBMISSION_CHARS:
+        audit.log_rejection(creator_id=creator_id, reason="text_too_long",
+                            length=len(text))
+        return jsonify({
+            "error": "bad_request",
+            "message": f"`text` is over the {config.MAX_SUBMISSION_CHARS}-character limit.",
+        }), 400
+
+    content_id = str(uuid.uuid4())
+
+    try:
+        model_score = detector.model_signal(text)
+    except detector.DetectorUnavailable as exc:
+        # Signal one can't run (model not downloaded, no disk, etc). That's a
+        # service problem, not the writer's fault — say so, and log it as a
+        # rejection rather than pretending a decision happened.
+        audit.log_rejection(creator_id=creator_id, reason="detector_unavailable",
+                            content_id=content_id, detail=str(exc))
+        return jsonify({
+            "error": "detector_unavailable",
+            "message": "The detector model isn't available right now. Run "
+                       "`python detector.py` once to download it.",
+        }), 503
+    except ValueError as exc:
+        # "text too short to score" from detector.perplexity — a few words,
+        # not a crash-worthy input, but not scoreable either.
+        audit.log_rejection(creator_id=creator_id, reason="text_too_short",
+                            content_id=content_id, detail=str(exc))
+        return jsonify({
+            "error": "bad_request",
+            "message": "That's too short to score — a few sentences at least.",
+        }), 400
+
+    # Milestone 4 fills these in for real. For now: one signal, placeholders
+    # for the rest, so the route and the signal can be judged separately from
+    # the parts that don't exist yet.
+    style_score = None
+    confidence = None
+    guess = None
+    label = "placeholder — scoring.combine_signals and score_to_label aren't wired in yet"
+
+    audit.log_decision(
+        content_id=content_id,
+        creator_id=creator_id,
+        guess=guess,
+        model_score=model_score,
+        style_score=style_score,
+        combined_score=None,
+        label=label,
+        status="decided",
+    )
+
     return jsonify({
-        "error": "not_implemented",
-        "message": "POST /submit isn't built yet — see the TODO in app.py.",
-        "you_sent": {
-            "text_length": len(payload.get("text", "")),
-            "creator_id": payload.get("creator_id"),
-        },
-    }), 501
+        "content_id": content_id,
+        "guess": guess,
+        "confidence": confidence,
+        "label": label,
+        "model_score": model_score,
+        "style_score": style_score,
+    })
 
 
 @app.post("/appeal")
