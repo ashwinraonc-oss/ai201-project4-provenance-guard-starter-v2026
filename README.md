@@ -36,8 +36,15 @@
 
 ## What This Does
 
-<!-- The path a submission takes, from arriving to the label a reader sees.
-     Six or seven steps — this is the trace you wrote in Milestone 1. -->
+Provenance Guard takes a piece of writing and tells the submitter whether it looks human-written, AI-written, or genuinely unclear — and lets them push back if they think it got it wrong. The path one submission takes, arrival to label:
+
+1. A writer `POST`s `{"text": "...", "creator_id": "..."}` to `/submit`.
+2. The route pulls `text` and `creator_id` out of the body and mints a `content_id` (a UUID) — this id is the thread that ties the decision, the log entry, and any later appeal together.
+3. **Signal one** (`detector.model_signal`) runs a small language model (GPT-2) on the text locally and measures how *predictable* it is (perplexity), squashed to a 0–1 `model_score` where higher means more AI-like.
+4. **Signal two** (`stylometry.style_signal`) measures the text's shape — sentence-length variety, vocabulary repetition, punctuation density — with no idea what the words mean, into its own 0–1 `style_score`.
+5. `scoring.combine_signals` turns those two numbers into one `combined_score`, deciding what happens when they disagree.
+6. `scoring.score_to_label` turns that single number into a `guess` (`human` / `unsure` / `ai`) and a full sentence a reader actually sees — not a confidence number.
+7. `audit.log_decision` writes every field of that decision to `logs/audit.jsonl` before the response goes out, and the response itself carries the `content_id`, the guess, the label, and both signal scores. If the writer disagrees, `POST /appeal` with that `content_id` moves the entry to `under_review` and records their reasoning next to the original decision — it doesn't re-score anything automatically.
 
 
 
@@ -53,19 +60,19 @@
 
 ### Signal one — the model signal
 
-**What it measures:**
+**What it measures:** perplexity — how surprised a local GPT-2 model is by the text's actual sequence of words, i.e. how predictable the text is to a model that's just trying to guess the next token. Turned into a 0–1 score where higher means more AI-like.
 
-**Why that might differ between human and AI writing:**
+**Why that might differ between human and AI writing:** a language model writes by repeatedly picking a likely next word, so text it produced tends to be text it (or a similar model) also finds easy to predict. Human writing wanders more — odd word choices, abrupt turns, the specific rather than the typical — which reads as higher perplexity.
 
-**What it can't see:**
+**What it can't see:** who wrote it. It measures predictability, not authorship, and those aren't the same thing. It rewards common words in short, ordinary sentences regardless of who's writing them — someone writing in a second language and staying with vocabulary they're sure of, a younger writer, anyone writing plainly on purpose all score about as machine-like as machine writing does. It runs backwards on dense, ornate human prose too: rare words are exactly what trip the model up, so formal or unusual human writing often reads as *more* human on this signal than it deserves to. The writers this signal is most likely to accuse are the ones with the least room to argue back — that's structural, not a bug I can tune away.
 
 ### Signal two — the style signal
 
-**What it measures:**
+**What it measures:** the text's shape, not its meaning — how much sentence length varies, how much the vocabulary repeats (unique words over total words), and how dense and varied the punctuation is.
 
-**Why that might differ between human and AI writing:**
+**Why that might differ between human and AI writing:** "most likely next word," applied over and over, tends to produce even, mid-length sentences and a narrower vocabulary band on average. Human writing is lumpier on purpose and by accident — a three-word sentence next to a forty-word one, a vocabulary that drifts, punctuation habits that are specific to one writer.
 
-**What it can't see:**
+**What it can't see:** the text at all, semantically. It has no idea what the words mean, so anything that changes the *shape* without changing the *substance* moves the score — adding typos, breaking one long sentence into three short ones, pasting in a block quotation with a different rhythm than the surrounding prose. All of that is cheap to do on purpose, which is exactly what next unit's attack set is built to exploit.
 
 ### The combining rule
 
