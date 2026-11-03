@@ -195,15 +195,15 @@ The original `decided` entry stays exactly where it was — the appeal is a seco
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* before writing `combine_signals`, I asked Claude to actually run both signals over the same three test pieces and find a case where they split, rather than designing the combining rule from the docstrings alone.
+- *What came back:* the three obvious pieces (clearly AI, clearly human, plain human) all had both signals agreeing. Finding a real split meant deliberately constructing a paragraph that mimics a known real LLM tic — overusing em dashes and semicolons even in otherwise generic, predictable prose. That piece scored `model_score` 0.52 (dead center) against `style_score` 0.03 (confidently human) — a 0.50 gap.
+- *What I changed:* a plain weighted average would have landed that case at 0.32 — already "human," by luck. I added the explicit disagreement rule (pull toward the more-human signal when the two split by more than 0.35) specifically because I wanted that case to land there *by design*, not by whatever the weights happened to produce, and because criterion 1 says that's the direction I should be wrong in when the evidence disagrees.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Milestone 4's four calibration inputs explicitly include "plain conventional human writing," not just the easy clearly-AI/clearly-human ends. I asked for that one to be tested for real rather than assumed to be fine.
+- *What came back:* a four-sentence, plainly-written paragraph about walking to the store scored `combined_score` 0.69 — solidly in the `ai` band. Both signals contributed: low vocabulary variety and short, even sentences read as AI-like on signal two, and a predictable, common-word paragraph reads as AI-like on signal one, exactly as both files' own docstrings warned.
+- *What I changed:* nothing in the code — this is the real version of the false positive Milestone 1 asked me to trace on paper, now showing up in my own numbers on my first real test rather than staying hypothetical. I didn't retune the thresholds to make this one example pass, because that would be fitting the system to a single input rather than fixing the underlying blind spot. I wrote it up honestly here and flagged it as the concrete evidence criterion 1 will actually be measured against next unit.
 
 <!-- ═══════════════════════ UNIT 8 — THE TEST ═══════════════════════ -->
 
