@@ -49,81 +49,93 @@ def words(text: str) -> list[str]:
 
 def sentence_length_spread(text: str) -> float:
     """
-    How much sentence length varies. ← TODO
+    How much sentence length varies, in words per sentence.
 
-    Returns:
-        A float. Decide yourself what scale it's on and which direction means
-        "more human" — then write that down, because your combining rule
-        depends on knowing it.
-
-    A hint on what you're reaching for: the standard deviation of sentence
-    lengths, probably divided by the mean so a long text and a short one are
-    comparable. `statistics.stdev` is imported for you.
-
-    Watch the edge case: a one-sentence submission has no spread at all, and
-    `stdev` raises on fewer than two values. Decide what that should return
-    before the attack set decides for you.
+    Scale and direction, decided and written down: standard deviation of
+    per-sentence word counts, divided by the mean so a long text and a short
+    one are comparable. **Higher means MORE human-like** — a one-sentence
+    submission (or one where every sentence is the same length) has zero
+    spread, which reads as the most machine-uniform case on this measure, not
+    a missing value. `style_signal` below is the thing that flips this to
+    match `detector.model_signal`'s "higher = more AI" direction.
     """
-    # TODO: replace this
-    return 0.0
+    lengths = [len(words(s)) for s in sentences(text)]
+    lengths = [n for n in lengths if n > 0]
+    if len(lengths) < 2:
+        return 0.0
+    mean = statistics.mean(lengths)
+    if mean == 0:
+        return 0.0
+    return statistics.stdev(lengths) / mean
 
 
 def type_token_ratio(text: str) -> float:
     """
-    Unique words over total words. ← TODO
-
-    Returns:
-        A float between 0 and 1. Higher means more varied vocabulary.
+    Unique words over total words. 0 to 1. **Higher means more human-like**
+    (more varied vocabulary) — same "flip before combining" note as above.
 
     Worth knowing before you rely on it: this measure falls as text gets
     longer, because common words repeat. Two texts of different lengths aren't
     directly comparable on it, and if your test inputs vary a lot in length,
     that alone can look like a signal.
     """
-    # TODO: replace this
-    return 0.0
+    w = words(text)
+    if not w:
+        return 0.0
+    return len(set(w)) / len(w)
 
 
 def punctuation_density(text: str) -> float:
     """
-    How much punctuation, relative to length. ← TODO
+    How much *distinctive* punctuation per 100 words — semicolons, colons, and
+    em/en dashes, not full stops or commas. Full stops are load-bearing
+    grammar everyone uses the same way; semicolons and dashes are a real
+    stylistic choice that varies a lot writer to writer, which is why they're
+    the ones worth counting here.
 
-    Returns:
-        A float. Whether you count all punctuation or only some kinds — commas,
-        semicolons, dashes — is a real choice. Semicolons and em dashes are
-        more interesting than full stops, because they vary more between
-        writers.
+    **Higher means more human-like**, same flip-before-combining note as the
+    other two measures.
     """
-    # TODO: replace this
-    return 0.0
+    w = words(text)
+    if not w:
+        return 0.0
+    marks = re.findall(r"[;:—–]", text)
+    return len(marks) / len(w) * 100
 
 
 # ── Combining them ───────────────────────────────────────────────────────────
 
 def style_signal(text: str) -> float:
     """
-    The style signal as a 0–1 score. **Higher means more likely AI.** ← TODO
+    The style signal as a 0–1 score. **Higher means more likely AI.**
 
-    Combine your three measures into one number. Same direction as
-    `detector.model_signal`, so that `scoring.combine_signals` can treat them
-    the same way — if one of your signals runs backwards, everything above it
-    is wrong in a way that's hard to see.
+    All three raw measures above point the other way (higher = more human), so
+    step one is flipping each. Step two is getting them onto a comparable
+    scale before averaging, since a raw type-token ratio lives on 0–1 and a
+    raw punctuation count or spread ratio doesn't — averaging them unscaled
+    would let whichever has the bigger raw numbers dominate by accident.
 
-    Two things to decide and write down:
+    The caps below are the normalizing choice, made and written down rather
+    than left implicit:
+      - sentence_length_spread capped at 0.8 (stdev/mean this high is already
+        quite lumpy prose; more than that doesn't need to count for more)
+      - punctuation_density capped at 3 per 100 words (three semicolons/dashes
+        per 100 words is already a distinctive, heavy style)
+      - type_token_ratio needs no cap; it's already 0–1
 
-      1. Which direction each measure points. Low spread means more AI-ish, so
-         it needs flipping. Work out which of your three need that.
-      2. How to get each onto a comparable scale. A raw type-token ratio sits
-         between 0 and 1; a raw punctuation count doesn't. Adding them
-         unscaled means whichever has the bigger numbers wins by default.
-
-    Test it on the four calibration inputs from Milestone 4 — clearly AI,
-    clearly human, plain conventional human writing, lightly-edited AI — before
-    you trust it. Plain and ordinary, not formal: formal prose reads as *human*
-    to signal one, and it is plain writing that gets accused.
+    Each capped measure is divided by its cap to land on 0–1, the three are
+    averaged (equal weight — no reason yet to trust one of my own three
+    measures over another), and the whole thing is flipped (`1 - `) to point
+    the same way as `detector.model_signal`: higher output here means more
+    AI-like, not more human-like.
     """
-    # TODO: replace this
-    return 0.5
+    spread = min(sentence_length_spread(text), 0.8) / 0.8
+    ttr = type_token_ratio(text)
+    punct = min(punctuation_density(text), 3.0) / 3.0
+
+    human_likeness = (spread + ttr + punct) / 3.0
+    score = 1.0 - human_likeness
+    return round(min(max(score, 0.0), 1.0), 4)
 
 
 if __name__ == "__main__":

@@ -51,12 +51,28 @@ def combine_signals(model_score: float, style_score: float) -> float:
 
     The weights in config.py are placeholders. Change them, or ignore them and
     write a different rule.
+
+    **The rule, written down before it was coded:** start with a weighted
+    average (model signal 0.6, style signal 0.4 — see config.py for why).
+    Then check how far apart the two signals are. If they split by more than
+    `config.SIGNAL_DISAGREEMENT_THRESHOLD`, don't just let that average out to
+    "unsure" by accident — pull the result halfway toward the MORE HUMAN of
+    the two signals. That's a deliberate, asymmetric choice: when the
+    evidence disagrees, I'd rather undercount an AI submission than
+    overcount a human one, because criterion 1 says a wrong accusation costs
+    more than a missed detection. There's no version of this rule that avoids
+    the trade — this is which way I chose to be wrong.
     """
-    # TODO: replace this
-    return (
+    weighted = (
         config.WEIGHT_MODEL_SIGNAL * model_score
         + config.WEIGHT_STYLE_SIGNAL * style_score
     )
+
+    if abs(model_score - style_score) > config.SIGNAL_DISAGREEMENT_THRESHOLD:
+        more_human = min(model_score, style_score)
+        weighted = (weighted + more_human) / 2.0
+
+    return round(min(max(weighted, 0.0), 1.0), 4)
 
 
 def score_to_label(score: float) -> tuple[str, str]:

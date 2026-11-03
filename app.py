@@ -200,6 +200,8 @@ def submit():
     a malformed input is one of the most common real failures there is.
     """
     import detector
+    import scoring
+    import stylometry
 
     payload = request.get_json(silent=True) or {}
     text = payload.get("text")
@@ -255,13 +257,13 @@ def submit():
             "message": "That's too short to score — a few sentences at least.",
         }), 400
 
-    # Milestone 4 fills these in for real. For now: one signal, placeholders
-    # for the rest, so the route and the signal can be judged separately from
-    # the parts that don't exist yet.
-    style_score = None
+    style_score = stylometry.style_signal(text)
+    combined_score = scoring.combine_signals(model_score, style_score)
+
+    # Milestone 5 fills these in for real.
     confidence = None
     guess = None
-    label = "placeholder — scoring.combine_signals and score_to_label aren't wired in yet"
+    label = "placeholder — scoring.score_to_label isn't wired in yet"
 
     audit.log_decision(
         content_id=content_id,
@@ -269,7 +271,7 @@ def submit():
         guess=guess,
         model_score=model_score,
         style_score=style_score,
-        combined_score=None,
+        combined_score=combined_score,
         label=label,
         status="decided",
     )

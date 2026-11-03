@@ -53,14 +53,26 @@ MAX_SUBMISSION_CHARS = 30_000
 
 
 # ─── Scoring (Milestone 4) ───────────────────────────────────────────────────
-# How much each signal counts toward the combined score.
+# How much each signal counts toward the combined score, decided after
+# running both signals over real calibration text — see README's Signals and
+# Scoring section for the worked example (varied punctuation and sentence
+# length make a generic, predictable paragraph read as confidently human on
+# signal two, 0.03, while signal one sits dead-center at 0.52).
 #
-# ⚠️ These are placeholders. Milestone 4 asks you to write your combining rule
-# down BEFORE you code it, and to put the numbers in your README. Whatever you
-# decide, it goes here.
+# Model signal counts for a bit more because it's the one that's actually
+# tried to read the text; style is pure shape and easier to game on purpose.
+# Neither gets an overwhelming weight — both have a documented, structural
+# blind spot, and trusting one of them heavily is exactly how that blind spot
+# turns into a wrong accusation.
+WEIGHT_MODEL_SIGNAL = 0.6
+WEIGHT_STYLE_SIGNAL = 0.4
 
-WEIGHT_MODEL_SIGNAL = 0.5
-WEIGHT_STYLE_SIGNAL = 0.5
+# When the two signals split by more than this, criterion 1's reasoning
+# applies directly: an accusation needs the two signals to actually agree,
+# not just average out to "unsure" by coincidence. combine_signals pulls the
+# score toward the MORE HUMAN of the two when they disagree this much — see
+# the rule itself for the exact blend.
+SIGNAL_DISAGREEMENT_THRESHOLD = 0.35
 
 
 # ─── Thresholds (Milestone 5) ────────────────────────────────────────────────

@@ -76,19 +76,17 @@ Provenance Guard takes a piece of writing and tells the submitter whether it loo
 
 ### The combining rule
 
-<!-- Write the rule in words, then give the numbers. What happens when the two
-     signals disagree? -->
+**The rule:** start with a weighted average. Then check how far apart the two signals are — if they disagree by more than 0.35, don't let that just average out to "unsure" by coincidence: pull the result halfway toward whichever of the two signals reads *more human*. When the evidence disagrees, I'd rather undercount an AI submission than overcount a human one — criterion 1 says a wrong accusation costs more than a missed detection, and there's no version of this rule that avoids that trade entirely, only a choice of which way to lean when it comes up.
 
-**The rule:**
-
-**The numbers:**
+**The numbers:** `WEIGHT_MODEL_SIGNAL = 0.6`, `WEIGHT_STYLE_SIGNAL = 0.4`, disagreement threshold `0.35` — all in `config.py`. Model signal counts for a bit more because it's the one that's actually tried to read the text; style is pure shape and cheaper to game on purpose. Neither is weighted heavily, because both have a documented, structural blind spot, and leaning hard on one is exactly how a blind spot becomes a wrong accusation.
 
 **Where it lives:** `scoring.py::combine_signals`
 
-<!-- ⚠️ The grader checks your code against that line. If your rule lives
-     somewhere else, say where. -->
+**A case where my two signals split, and what my rule does with it:** a paragraph of otherwise generic, predictable prose, written with heavy em dashes, a semicolon, and short-long-short sentence variety — mimicking a known real tendency of LLMs to overuse exactly that kind of punctuation even in formulaic text. ("The results were clear — remarkably so. Users reported satisfaction; engagement metrics improved across the board. It's worth noting, however, that further testing — ideally over a longer period — would help confirm these initial findings. The team is optimistic. Cautiously so.")
 
-**A case where my two signals split, and what my rule does with it:**
+- `model_score` = 0.5221 (dead center — genuinely unsure)
+- `style_score` = 0.0256 (confidently human — the dashes and variety read as a distinctive personal style, not as AI mimicking one)
+- A plain weighted average would land at 0.3235. The disagreement rule instead pulls it to **0.1746** — solidly human — because the two signals split by more than the 0.35 threshold (0.4965 apart) and the rule explicitly favors the more-human reading when that happens.
 
 
 
