@@ -101,14 +101,13 @@ Provenance Guard takes a piece of writing and tells the submitter whether it loo
 
 | Label | Score range | The exact text a reader sees |
 |---|---|---|
-| high-confidence human |  |  |
-| unsure |  |  |
-| high-confidence AI |  |  |
+| high-confidence human | 0.00 – 0.35 | "We think this was probably written by a person." |
+| unsure | 0.35 – 0.65 | "Our signals don't agree clearly either way on this one. We're not saying this looks like AI — we genuinely can't tell, and that's on us, not you. If you wrote every word yourself, you don't need to do anything, but you're welcome to tell us so." |
+| high-confidence AI | 0.65 – 1.00 | "Our signals suggest this was likely written, or heavily assisted, by an AI tool rather than by a person. If that's not right, please appeal — tell us what happened and we'll have a person look at it." |
 
-**Why I worded the "unsure" one this way:**
-<!-- It's the hardest of the three. It has to admit uncertainty without
-     sounding like an accusation, because the person reading it may well have
-     written every word themselves. -->
+All three confirmed reachable with real submissions, not just by inspecting `scoring.label_ranges()`: a generic AI-sounding paragraph landed `ai` (0.77), a casually-written personal paragraph landed `human` (0.16), and a plain quarterly-update paragraph landed `unsure` (0.51, both signals genuinely split down the middle rather than agreeing).
+
+**Why I worded the "unsure" one this way:** the honest version of "unsure" is "our tools couldn't tell," not "this looks suspicious." I deliberately put the uncertainty on the system ("that's on us, not you") rather than on the writer, and explicitly said doing nothing is fine — because the person reading this may well have written every single word themselves, and a label that reads as a soft accusation would make them defend something they didn't do. The `ai` label still names what it is (a suggestion, not a verdict) and points straight at the appeal path, for the same reason: it's the one message that lands on someone who, more likely than not given criterion 1's own numbers, is telling the truth when they push back.
 
 
 
@@ -121,19 +120,21 @@ Provenance Guard takes a piece of writing and tells the submitter whether it loo
 
 **A submission**
 
-<!-- The response needs content_id, guess, confidence, label, AND both
-     signal scores - model_score and style_score. Unit 8's tools read those
-     two off the response, so leaving them out costs you next unit's
-     diagnostics. -->
-
 ```bash
 $ curl -X POST http://127.0.0.1:5000/submit \
   -H "Content-Type: application/json" \
-  -d '{"text": "...", "creator_id": "..."}'
+  -d '{"text": "Our team completed the migration ahead of schedule this week, and early feedback from users has been largely positive. A few minor bugs surfaced; we are addressing them in the next release cycle.", "creator_id": "sample_writer"}'
 ```
 
 ```json
-
+{
+  "content_id": "176e47aa-5eba-4b2a-82d4-23b462e090bc",
+  "guess": "unsure",
+  "confidence": 0.24,
+  "label": "Our signals don't agree clearly either way on this one. We're not saying this looks like AI — we genuinely can't tell, and that's on us, not you. If you wrote every word yourself, you don't need to do anything, but you're welcome to tell us so.",
+  "model_score": 0.6737,
+  "style_score": 0.2542
+}
 ```
 
 **An appeal**
@@ -141,22 +142,52 @@ $ curl -X POST http://127.0.0.1:5000/submit \
 ```bash
 $ curl -X POST http://127.0.0.1:5000/appeal \
   -H "Content-Type: application/json" \
-  -d '{"content_id": "...", "reasoning": "..."}'
+  -d '{"content_id": "176e47aa-5eba-4b2a-82d4-23b462e090bc", "reasoning": "This is my own weekly status update, written by me, no AI tools used."}'
 ```
 
 ```json
-
+{
+  "ok": true,
+  "content_id": "176e47aa-5eba-4b2a-82d4-23b462e090bc",
+  "status": "under_review",
+  "message": "Your appeal has been recorded. A person will review this decision — no automatic re-checking happens."
+}
 ```
 
 **What the log shows afterwards**
 
 ```bash
-$ curl "http://127.0.0.1:5000/log?limit=3"
+$ curl "http://127.0.0.1:5000/log?limit=2"
 ```
 
 ```json
-
+{
+  "count": 2,
+  "entries": [
+    {
+      "timestamp": "2026-11-03T22:26:27+00:00",
+      "content_id": "176e47aa-5eba-4b2a-82d4-23b462e090bc",
+      "creator_id": "sample_writer",
+      "guess": "unsure",
+      "model_score": 0.6737,
+      "style_score": 0.2542,
+      "combined_score": 0.38,
+      "label": "Our signals don't agree clearly either way on this one. We're not saying this looks like AI — we genuinely can't tell, and that's on us, not you. If you wrote every word yourself, you don't need to do anything, but you're welcome to tell us so.",
+      "status": "decided"
+    },
+    {
+      "timestamp": "2026-11-03T22:26:33+00:00",
+      "content_id": "176e47aa-5eba-4b2a-82d4-23b462e090bc",
+      "creator_id": "sample_writer",
+      "event": "appeal",
+      "status": "under_review",
+      "reasoning": "This is my own weekly status update, written by me, no AI tools used."
+    }
+  ]
+}
 ```
+
+The original `decided` entry stays exactly where it was — the appeal is a second, later entry for the same `content_id`, not an edit to the first. That's the audit log doing its job: anyone reading it back can see what was decided, that it was challenged, and in what order.
 
 ---
 

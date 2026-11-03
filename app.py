@@ -259,11 +259,13 @@ def submit():
 
     style_score = stylometry.style_signal(text)
     combined_score = scoring.combine_signals(model_score, style_score)
+    guess, label = scoring.score_to_label(combined_score)
 
-    # Milestone 5 fills these in for real.
-    confidence = None
-    guess = None
-    label = "placeholder — scoring.score_to_label isn't wired in yet"
+    # How far the combined score sits from the least-confident possible
+    # point (0.5, a dead-even split) — 0.0 there, 1.0 at either extreme.
+    # Independent of which label it landed in, so "unsure" still reports a
+    # real (low) confidence rather than a fixed placeholder.
+    confidence = round(min(abs(combined_score - 0.5) * 2.0, 1.0), 4)
 
     audit.log_decision(
         content_id=content_id,
@@ -307,13 +309,43 @@ def appeal():
     wrong accusation and nothing at all.
     """
     payload = request.get_json(silent=True) or {}
+    content_id = payload.get("content_id")
+    reasoning = payload.get("reasoning")
 
-    # TODO: delete this and build the route.
+    if not isinstance(content_id, str) or not content_id.strip():
+        return jsonify({
+            "error": "bad_request",
+            "message": "`content_id` is required and can't be empty.",
+        }), 400
+    if not isinstance(reasoning, str) or not reasoning.strip():
+        return jsonify({
+            "error": "bad_request",
+            "message": "`reasoning` is required and can't be empty.",
+        }), 400
+
+    # A typo here fails silently and looks like a broken endpoint — the most
+    # common way this milestone eats an hour, so check it explicitly rather
+    # than letting log_appeal write an appeal for a content_id nobody ever
+    # decided anything about.
+    prior = audit.entries_for(content_id)
+    if not prior:
+        return jsonify({
+            "error": "not_found",
+            "message": f"No submission found with content_id '{content_id}'. "
+                       "Check it against the response from your original "
+                       "/submit call or an entry in /log.",
+        }), 404
+
+    creator_id = prior[0].get("creator_id", "unknown")
+    audit.log_appeal(content_id=content_id, creator_id=creator_id, reasoning=reasoning)
+
     return jsonify({
-        "error": "not_implemented",
-        "message": "POST /appeal isn't built yet — see the TODO in app.py.",
-        "you_sent": payload,
-    }), 501
+        "ok": True,
+        "content_id": content_id,
+        "status": "under_review",
+        "message": "Your appeal has been recorded. A person will review this "
+                   "decision — no automatic re-checking happens.",
+    })
 
 
 # ── Already works ─────────────────────────────────────────────────────────────
