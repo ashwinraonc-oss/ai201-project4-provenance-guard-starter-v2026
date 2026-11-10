@@ -204,6 +204,19 @@ def submit():
     import stylometry
 
     payload = request.get_json(silent=True) or {}
+
+    # Unit 8's attack set found this one: a JSON body that parses fine but
+    # isn't an object at all — a bare list, `["text", "creator_id"]` — makes
+    # `payload.get(...)` below blow up with an AttributeError, a real 500.
+    # Same malformed-input rule as everything after it: reject with a 400
+    # and log it rather than let the route crash.
+    if not isinstance(payload, dict):
+        audit.log_rejection(creator_id="unknown", reason="body_not_an_object")
+        return jsonify({
+            "error": "bad_request",
+            "message": "Request body must be a JSON object.",
+        }), 400
+
     text = payload.get("text")
     creator_id = payload.get("creator_id")
 

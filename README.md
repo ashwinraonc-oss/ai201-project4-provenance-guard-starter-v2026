@@ -209,13 +209,19 @@ The original `decided` entry stays exactly where it was — the appeal is a seco
 
 - *What I asked for:* when building `scenarios.py` for criterion 1 (false positives on plain writing), I need the submitter's own writing — someone else's prose doesn't test what the criterion is actually asking. I'm not the submitter, so I asked myself (no model call needed here) whether I could proceed at all.
 - *What came back:* nothing to fabricate around — there's no legitimate way to generate "my own writing" on someone else's behalf.
-- *What I changed:* I wrote 10 disclosed placeholder sentences, marked clearly as a stand-in in `scenarios.py`'s own comments and in every place the README reports on criterion 1, and treated every verdict touching it as provisional rather than final. Same thing happened with `attack_set.zip` — a TF-distributed file this repo never received — which I flagged rather than inventing an attack set myself; a self-written one wouldn't test anything I hadn't already anticipated.
+- *What I changed:* I wrote 10 disclosed placeholder sentences, marked clearly as a stand-in in `scenarios.py`'s own comments and in every place the README reports on criterion 1, and treated every verdict touching it as provisional rather than final. Same thing happened with the attack set — `attack_set.zip` wasn't in this repo, and I flagged that rather than inventing attack inputs myself, since a self-written set wouldn't test anything I hadn't already anticipated. (It was supplied afterward, as real files, and the Attack Run sections above run the real thing — but the decision not to fabricate one in the meantime stands.)
 
 **Moment 4**
 
 - *What I asked for:* once criterion 1's real run showed 4 of 10 plain sentences flagged `ai`, I asked for the actual cause, not just "lower the threshold until it passes" — I wanted to know whether the fix was in the route, either signal, the combining rule, or the label mapping before touching anything.
 - *What came back:* all 4 false positives had `model_score` 0.64-0.75 and `style_score` 0.60-0.71 — both signals agreeing these short, plain sentences are "predictable," which is a structural property of signal one (and secondarily signal two) that has nothing to do with authorship.
 - *What I changed:* moved `AI_THRESHOLD` from 0.65 to 0.72 — past that specific score cluster — rather than reweighting the signals (both had already agreed, so reweighting wouldn't separate them) or changing the combining rule (the disagreement rule doesn't trigger here; the two signals aren't disagreeing, they're agreeing wrongly). I verified the obviously-AI calibration text (0.7714) still clears the new line before trusting the change.
+
+**Moment 5**
+
+- *What I asked for:* PI02 (a fake "SYSTEM:" message prepended to AI boilerplate) came back `human`, and the lazy read is "the injection worked." I didn't want to report that without checking whether the system actually did anything resembling obeying an instruction, since nothing in this codebase parses submitted text as commands — I asked for the counterfactual: the same boilerplate, with the fake preamble stripped out, sent on its own.
+- *What came back:* the bare boilerplate alone scored `model_score` 0.754 / `style_score` 0.346 (unsure). With the preamble prepended, the exact same boilerplate scored 0.204 / 0.163 (human) — both signals moved, by a lot, with no code path that reads "SYSTEM:" specially.
+- *What I changed:* nothing in the code, but it changed the diagnosis I wrote. The real mechanism isn't "prompt injection" in any meaningful sense — it's that both signals score the whole submission as one undivided blob, so prepending *any* sufficiently different block of text dilutes the reading, whether that text is a fake instruction, a human opening paragraph (evasion family's EV09), or nothing in particular. I wrote up "What's Still Broken" around that broader, more accurate mechanism instead of the narrower "prompt injection succeeded" framing the family name suggests.
 
 <!-- ═══════════════════════ UNIT 8 — THE TEST ═══════════════════════ -->
 
@@ -277,18 +283,168 @@ Exactly 8 through, then every request after that rejected — matching the per-m
 
 ## Attack Run — Before
 
-**Blocked — not run.** `run_attacks.py` takes a TF-provided attack set
-(`attack_set.zip`, a folder of adversarial inputs with expected outcomes)
-that wasn't included in this starter repo and that I don't have a copy of.
-I searched for it and confirmed `run_attacks.py` has no embedded fallback —
-it genuinely needs that file. I'm disclosing this rather than fabricating
-attack inputs myself: a TF-authored attack set is meant to test against
-cases I haven't seen or anticipated, and an attack set I wrote myself
-wouldn't test that. The one piece of `run_attacks.py` that doesn't need the
-missing file — `--flood N`, a self-contained rate-limit stress test — is
-covered above under Rate Limiting instead. Everything below that depends on
-a real attack-set run (the "before" table, the diagnosis of which attacks
-got through, and the "after" comparison) is marked the same way.
+56 attacks, `attack_set/` (`attacks.csv` + `attacks_malformed_requests.csv`),
+against the service as it stood after unit 8 Milestone 1 (rate limiting on,
+`AI_THRESHOLD` still at the original 0.65) and before the RQ07 fix described
+below. Full detail: `results/attack_run_2026-11-10_1839_before.md`.
+
+**My verdict rule**, stated up front since `run_attacks.py` is explicit that
+this is a judgment call and two people can honestly disagree:
+- `evasion` — HELD only if the guess stayed `ai`. Anything else (`unsure` or
+  `human`) means the evasion got what it was going for, since the whole
+  point of this family is avoiding an `ai` label.
+- `false_positive` — HELD if the guess is anything but `ai`. These are real
+  human writing; only a confident `ai` guess is a wrong accusation.
+- `prompt_injection` — HELD unless the result is a confident, wrong-feeling
+  label I can't explain as anything but the attack working. Nothing in this
+  service parses or obeys text as instructions, so I checked mechanism
+  before calling a verdict (see PI02 below) — but a confident wrong answer
+  still counts as BROKE even when the mechanism isn't "it obeyed me."
+- `malformed` — HELD unless the status was 500. These rows test robustness,
+  not accuracy; a coherent score on garbage input is still HELD as long as
+  nothing crashed.
+- `flood_same_creator` — HELD across the board; the limiter doing exactly
+  what Milestone 1 built it to do (8 through, then 429) is the limiter
+  working, not an attack getting through.
+
+| ID | Family | Targeting | Status | Content ID | Guess | Score | Verdict |
+|---|---|---|---|---|---|---|---|
+| EV01 | evasion | signal two: typos raise word variety | 200 | `1b303224` | human | 0.481 | BROKE |
+| EV02 | evasion | signal two: broken-up sentences raise length spread | 200 | `dad2d69f` | human | 0.561 | BROKE |
+| EV03 | evasion | signal two: a pasted quotation changes the shape | 200 | `a6e622c6` | unsure | 0.144 | BROKE |
+| EV04 | evasion | signal one: unusual words raise perplexity | 200 | `a75c02e5` | unsure | 0.243 | BROKE |
+| EV05 | evasion | both signals: heavy human editing pass | 200 | `cddcd5c7` | human | 0.353 | BROKE |
+| EV06 | evasion | signal two: one very long sentence and one very short | 200 | `ff1edafd` | unsure | 0.021 | BROKE |
+| EV07 | evasion | signal two: padding with punctuation | 200 | `05541a76` | unsure | 0.031 | BROKE |
+| EV08 | evasion | signal one: text below the token window | 200 | `69541ba8` | unsure | 0.267 | BROKE |
+| EV09 | evasion | both: AI text with a human opening paragraph bolted on | 200 | `66931824` | unsure | 0.263 | BROKE |
+| EV10 | evasion | signal two: repeated stanza structure | 200 | `a9949c9e` | ai | 0.758 | HELD |
+| FP01 | false_positive | plain, clear human writing with no flourishes | 200 | `ebddab37` | unsure | 0.199 | HELD |
+| FP02 | false_positive | human writing in a formal register | 200 | `7cc4432e` | ai | 0.417 | BROKE |
+| FP03 | false_positive | a non-native English speaker writing carefully | 200 | `36e97764` | ai | 0.464 | BROKE |
+| FP04 | false_positive | a student essay written to a rubric | 200 | `5c369aee` | ai | 0.462 | BROKE |
+| FP05 | false_positive | technical documentation written by a person | 200 | `fa452845` | ai | 0.512 | BROKE |
+| FP06 | false_positive | a person imitating a formal template | 200 | `319735b0` | ai | 0.489 | BROKE |
+| FP07 | false_positive | human writing that repeats a phrase deliberately | 200 | `f5f0abc1` | ai | 0.492 | BROKE |
+| FP08 | false_positive | very short genuine human submission | 200 | `945fe818` | unsure | 0.224 | HELD |
+| PI01 | prompt_injection | instruction to ignore the check | 200 | `f7176592` | unsure | 0.115 | HELD |
+| PI02 | prompt_injection | instruction disguised as a system message | 200 | `0bff5e34` | human | 0.624 | BROKE |
+| PI03 | prompt_injection | instruction wrapped in the writer's voice | 200 | `d9618497` | unsure | 0.005 | HELD |
+| PI04 | prompt_injection | attempt to make the label text hostile | 200 | `e92f6a1a` | unsure | 0.037 | HELD |
+| PI05 | prompt_injection | attempt to inject into the audit log | 200 | `b0b178b9` | human | 0.409 | BROKE |
+| PI06 | prompt_injection | instruction plus real human text | 200 | `e52a9b4e` | unsure | 0.133 | HELD |
+| MF01 | malformed | text is only whitespace | 400 | — | — | — | HELD |
+| MF02 | malformed | text is a single character | 400 | — | — | — | HELD |
+| MF03 | malformed | text is control characters | 200 | `060f04b4` | human | 0.732 | HELD |
+| MF04 | malformed | text is only punctuation | 200 | `33885d16` | human | 0.582 | HELD |
+| MF05 | malformed | text is a very long single word | 200 | `73bae32e` | ai | 0.730 | HELD |
+| MF06 | malformed | text is emoji only | 200 | `3ba0bb21` | ai | 0.996 | HELD |
+| MF07 | malformed | text is right-to-left script | 200 | `81c1d3df` | ai | 0.888 | HELD* |
+| MF08 | malformed | text is 60,000 characters | 400 | — | — | — | HELD |
+| RQ01-RQ06, RQ08-RQ12 | malformed | malformed JSON bodies (11 variants) | 400 | — | — | — | HELD |
+| **RQ07** | malformed | body is a JSON array, not an object | **500** | — | — | — | **BROKE** |
+| FL01_01-08 | flood_same_creator | 8 submissions from one creator | 200 | — | human | 0.687 | HELD |
+| FL01_09-12 | flood_same_creator | 4 more from the same creator | 429 | — | — | — | HELD |
+
+*MF07 is marked HELD only in the narrow sense that nothing crashed — see
+"The single worst outcome" below, because I don't think that's the honest
+headline for this row.
+
+**By family:** evasion 1 HELD / 9 BROKE · false_positive 2 HELD / 6 BROKE ·
+prompt_injection 4 HELD / 2 BROKE · malformed 19 HELD / 1 BROKE ·
+flood_same_creator 12 HELD / 0 BROKE. **18 of 56 BROKE.**
+
+**Ten audit log entries from the run**, chosen to show the different kinds
+of failure, not the ten easiest:
+
+```json
+// FP03 — careful, correct English from a non-native speaker, called `ai`
+// at high confidence. Nothing wrong with this writing; it reads as
+// "predictable" to signal one the same way the plain placeholder text in
+// the Run Log did.
+{"content_id": "36e97764-335b-4f22-baa4-c9434fd45173", "creator_id": "attacker_FP03",
+ "guess": "ai", "model_score": 0.8051, "style_score": 0.6223, "combined_score": 0.732,
+ "status": "decided"}
+
+// FP05 — technical documentation, about as plain and correct as writing
+// gets, also called `ai` with the highest confidence of the false-positive
+// family.
+{"content_id": "fa452845-9845-4bd6-bca2-09c5a392be56", "creator_id": "attacker_FP05",
+ "guess": "ai", "model_score": 0.8005, "style_score": 0.6894, "combined_score": 0.7561,
+ "status": "decided"}
+
+// FP02 — a formal committee report. This is the one Milestone 5's threshold
+// move rescues (see The Improvement) — but only because it happened to sit
+// just below the new line, not because anything about the underlying
+// misread changed.
+{"content_id": "7cc4432e-5526-4d4b-a1cd-f7057c809efe", "creator_id": "attacker_FP02",
+ "guess": "ai", "model_score": 0.7387, "style_score": 0.663, "combined_score": 0.7084,
+ "status": "decided"}
+
+// MF07 — a short, ordinary sentence in Arabic, called `ai` at 0.9438, the
+// single highest confidence in the whole run. See "the single worst
+// outcome" below.
+{"content_id": "81c1d3df-fc42-4a0e-88e7-4876568a5a12", "creator_id": "attacker_MF07",
+ "guess": "ai", "model_score": 0.9064, "style_score": 1.0, "combined_score": 0.9438,
+ "status": "decided"}
+
+// PI02 — a fake "SYSTEM:" message bolted onto AI boilerplate, called
+// `human`. Not because anything read and obeyed the fake instruction — see
+// the diagnosis below for what actually happened.
+{"content_id": "0bff5e34-d357-4b74-b0ed-4dbf66b26671", "creator_id": "attacker_PI02",
+ "guess": "human", "model_score": 0.2044, "style_score": 0.163, "combined_score": 0.1878,
+ "status": "decided"}
+
+// PI05 — an attempt to inject a fake log entry via the submitted text
+// itself, also landed `human` — via signal two reading all that stray
+// punctuation as human-like, then the disagreement rule pulling the whole
+// score down. The injection itself never touched the log: see "the single
+// worst outcome" for why.
+{"content_id": "b0b178b9-3a74-4478-af3b-7883e3fc094d", "creator_id": "attacker_PI05",
+ "guess": "human", "model_score": 0.6401, "style_score": 0.148, "combined_score": 0.2956,
+ "status": "decided"}
+
+// RQ01 — "no text field at all" rejected cleanly, no crash, logged as a
+// rejection like any other bad input.
+{"creator_id": "attacker_RQ01", "event": "rejected", "reason": "missing_text",
+ "status": "rejected", "timestamp": "2026-11-10T23:39:25+00:00"}
+
+// RQ07 — the one row with NO matching log entry at all, before or after.
+// The crash happened inside the route before any audit call ran. See
+// "the single worst outcome."
+
+// A rate-limit rejection from the flood family, same shape as Milestone 1's.
+{"creator_id": "flood_tester", "event": "rejected", "limit": "8 per 1 minute",
+ "reason": "rate_limited", "status": "rejected"}
+
+// An appeal entry, for contrast — the one path in this whole log that's
+// supposed to change a decision, and does, correctly, on request.
+{"content_id": "9dc79568-83e0-4d87-a5a5-88b997ce36e6", "creator_id": "calib_unsure",
+ "event": "appeal", "reasoning": "I wrote every word of this myself, no AI involved.",
+ "status": "under_review"}
+```
+
+**The single worst outcome** — the one I'd least want to explain to a
+writer whose work got caught by it: **RQ07, the 500.** Not because a crash
+is the most *consequential* row here (MF07 is worse for a real person), but
+because it's the only row that left **no trace at all** — `audit.get_json`
+parsed `["text", "creator_id"]` into a Python list, `payload.get("text")`
+raised `AttributeError` before any `audit.log_rejection` call ran, and the
+request vanished. `audit.py`'s own docstring names exactly this risk:
+*"an attack that shows up only as an absence is one you'll never find."*
+A thousand of these look like a quiet afternoon. Fixed below, before the
+"after" run — see **The Improvement**.
+
+Close second, and the one I'd actually lose sleep over: **MF07**, a single
+ordinary Arabic sentence ("This is a text in the Arabic language to test
+how the system handles text that doesn't use the Latin alphabet at all"),
+called `ai` at **0.9438** — the highest-confidence accusation this entire
+service produced, against the one input in the set that's the least
+adversarial of all. Nobody engineered MF07 to fool anything; it's just a
+sentence in a language this detector wasn't built around. If this ran for
+real, every non-English submission is a plausible false accusation, and the
+false-positive family didn't even think to test for it — I only found it
+because "malformed" happened to include a script test.
 
 ---
 
@@ -417,48 +573,123 @@ confident the *mechanism* is real (both signals genuinely conflate
 "predictable" with "AI-written" on short plain sentences), but I can't claim
 the actual target number is met until this is re-run against real writing.
 
+**A second, separate fix** — not the "pick one improvement" choice above,
+but required regardless: **RQ07's 500.** Stage: the route, `app.py::submit`,
+line 206. `payload = request.get_json(silent=True) or {}` assumes the parsed
+JSON is an object; a JSON array like `["text", "creator_id"]` is truthy, so
+it passes straight through, and `payload.get("text")` on a list raises
+`AttributeError` — an unhandled exception, a real 500, and (per "the single
+worst outcome" above) no audit trail at all. Fix: check `isinstance(payload,
+dict)` immediately after parsing, before anything calls `.get()` on it, and
+reject with the same 400-plus-logged-rejection pattern every other bad input
+already gets. Verified live: `curl -d '["text","creator_id"]'` now returns
+`400 {"error": "bad_request", "message": "Request body must be a JSON
+object."}` instead of crashing.
+
 ### Attack Run — After
 
-**Still blocked** — same reason as "Attack Run — Before": no `attack_set.zip`
-in this repo. Nothing to re-run against.
+Same 56 attacks, same `attack_set/`, run again after both fixes (threshold
+0.72, the RQ07 dict check). Full detail:
+`results/attack_run_2026-11-10_1840_after.md`.
 
-**Did it help, and how do I know:** For the one criterion it targeted, yes —
-3 of the 4 false-positive labels on plain text moved from `ai` to `unsure`,
-verified with a real request against the running server
-(`curl .../submit` on the "coffee" text returned `unsure` post-change,
-`ai` pre-change) and then confirmed across all 3 `run_eval.py` trials. The
-cost is the one named in `config.py` already: genuinely AI-generated text
-landing in the 0.65-0.72 band now reads as `unsure` instead of `ai` — this
-system now needs a clearer signal before it will accuse anyone, which means
-some real AI text that used to get flagged now won't. I can't measure how
-often that happens without the attack set, so I'm stating the trade-off
-rather than a number for it.
+| Family | Before | After |
+|---|---|---|
+| evasion | 1 HELD / 9 BROKE | 1 HELD / 9 BROKE — unchanged |
+| false_positive | 2 HELD / 6 BROKE | 3 HELD / 5 BROKE — **FP02 only** |
+| prompt_injection | 4 HELD / 2 BROKE | 4 HELD / 2 BROKE — unchanged |
+| malformed | 19 HELD / 1 BROKE | **20 HELD / 0 BROKE** — RQ07 fixed |
+| flood_same_creator | 12 HELD / 0 BROKE | 12 HELD / 0 BROKE — unchanged |
+| **Total** | **38 HELD / 18 BROKE** | **40 HELD / 16 BROKE** |
+
+The only two rows that moved: **FP02** (`ai` → `unsure`, confidence 0.417,
+combined 0.7084 — the threshold's new line at 0.72 happened to land just
+above it) and **RQ07** (`500` → `400`, the crash fix). Every other row is
+byte-for-byte identical, because neither fix touches signal one, signal two,
+or the combining rule — only the ai/unsure boundary and one route-level
+`isinstance` check.
+
+**Did it help, and how do I know:** Yes, for exactly the two things it
+targeted, confirmed by diffing the two attack-run reports line by line
+rather than re-reading 56 rows by eye. It did **not** help with the bigger
+problem the real attack set actually surfaces: **5 of 8 false_positive
+attacks and 9 of 10 evasion attacks still get through.** FP03-FP07's
+combined scores (0.731-0.756) sit well clear of 0.72, not just past it the
+way FP02's did — moving the line further would have to clear 0.76 to catch
+them, and by then the obviously-AI calibration text (0.7714) starts getting
+close too. This is the trade-off named in `config.py` becoming concrete: the
+threshold can trade which false positives happen, but it can't fix a signal
+that reads careful, formal, correctly-written human prose as "predictable"
+in the first place. That's a signal-one problem, not a threshold problem,
+and fixing it for real means signal one needs to measure something other
+than raw predictability — out of scope for one Milestone-5 change.
 
 ---
 
 ## What's Still Broken
 
-- **Criterion 1 is unverified against real evidence.** It now reads MET
-  (1 of 10), but only against placeholder text I wrote myself, disclosed
-  throughout. I'd re-run it against the actual submitter's own plain writing
-  before trusting that number for anything real.
-- **The attack set never ran.** `attack_set.zip` isn't in this repo, so
-  there's no evidence about adversarial inputs — paraphrase attacks, typo
-  injection, formatting tricks — specifically, only about the plain,
-  non-adversarial cases `scenarios.py` covers. Someone deliberately trying
-  to evade this system was never tested.
-- **Signal one's blind spot is narrowed, not closed.** Raising
-  `AI_THRESHOLD` moved the line past the specific cluster of scores I saw,
-  but any genuinely AI-generated text that happens to land at 0.65-0.72 —
-  or any human writing that happens to land above 0.72 — gets the wrong
-  label by construction. A threshold move can't fix a signal that conflates
-  "predictable" with "AI-written"; it only relocates where that confusion
-  bites.
-- **The "sister" case still flags `ai`** at a combined 0.7311, driven by a
-  model_score of 0.7423 — high confidence from signal one on a very mundane
-  sentence. One borderline case surviving the fix is expected; it's the
-  one still worth watching if real submitter text comes in and shows a
-  similar pattern.
+- **Criterion 1 is still unverified against real evidence.** It reads MET
+  (1 of 10) in the Run Log above, but only against 10 disclosed placeholder
+  sentences I wrote myself, not the submitter's own writing — see that
+  section for the full disclosure. The attack set's own `false_positive`
+  family (next bullet) suggests the real number could be considerably worse
+  once real, varied human writing is involved.
+- **Formal, careful human writing is still accused, and the threshold fix
+  barely touches it.** FP03 (a careful non-native English speaker), FP04 (a
+  rubric-driven student essay), FP05 (technical documentation), FP06 (a
+  formal template), FP07 (deliberate repetition) all still score `ai` at
+  combined 0.731-0.756. The common thread, same as criterion 1's diagnosis
+  but worse: signal one reads *correctly-structured, formal* writing as
+  predictable, same as it reads *short, plain* writing that way — careful
+  writing and AI writing look alike to a perplexity signal precisely
+  because careful writing is, by design, not surprising. This is a bigger
+  and more damaging version of criterion 1's finding, found only because
+  the real attack set's `false_positive` family tried harder cases than my
+  own placeholder sentences did.
+- **Non-English writing may be accused categorically, not occasionally.**
+  MF07 — one ordinary Arabic sentence — scored 0.9438, the single highest
+  confidence this service produced on anything. Neither signal was built or
+  tuned with non-Latin script in mind; signal two's `style_signal` counts
+  `;:—–` and splits on Latin punctuation and whitespace conventions that
+  don't carry over, and I have no evidence either way for signal one
+  beyond this one data point. This wasn't even in the `false_positive`
+  family — it's filed under `malformed`, which means the attack set's own
+  authors may not have been testing for this either. One data point isn't
+  proof of a systematic bias, but it's a serious enough possibility that I
+  would not ship this without testing a real sample of non-English
+  submissions first.
+- **Bolting unrelated text onto AI-generated boilerplate is the single most
+  reliable evasion technique in the whole set**, and it has nothing to do
+  with the text being an "instruction." EV09 ("AI text with a human opening
+  paragraph bolted on"), PI01, PI02, and PI03 all prepend a short, different
+  block of text to the same AI boilerplate and all land `unsure` or
+  `human`. I checked the mechanism on PI02 directly: the bare boilerplate
+  alone scores `model_score` 0.754 / `style_score` 0.346 (unsure); with the
+  fake "SYSTEM:" preamble prepended, the exact same boilerplate scores
+  0.204 / 0.163 (human) — a swing of over 0.5 on signal one alone. Nothing
+  parsed or obeyed the preamble as an instruction (confirmed: the response
+  never matches what PI02's text explicitly asked for — `confidence: 0.02`
+  — it produced 0.624, from ordinary scoring, not compliance). The real
+  mechanism: both signals score the *entire* submission as one undivided
+  blob, so prepending any sufficiently different block of text — benign,
+  adversarial, or nonsense — dilutes the whole reading. An attacker doesn't
+  need a clever instruction; a single unrelated paragraph in front of AI
+  text works just as well, and evasion family EV09 proves the "instruction"
+  framing isn't even necessary.
+- **The threshold fix is a narrow patch, not a cure.** It rescued the one
+  false positive that happened to sit just below the new line (FP02) and
+  fixed one real crash (RQ07). Everything else that broke before — 9 of 10
+  evasions, 5 of 8 false positives, both prompt-injection cases — broke
+  exactly the same way after. Fixing any of those for real means changing
+  what signal one and two actually measure, not where the line between
+  labels sits.
+
+**A pattern across most of this:** the service's actual accuracy problem
+isn't "can it be fooled by effort" — it's that **predictable ≠ AI-written**,
+and almost everything above traces back to that one conflation: formal
+writing is predictable, correct writing is predictable, and a single
+coherent paragraph bolted onto another one changes the predictability of
+the whole blob. A system built on this signal will keep re-discovering the
+same blind spot at every threshold.
 
 **The trade I'd make if this ran for real:** I'd keep erring toward fewer
 wrong accusations, even though that means some real AI-assisted text gets
