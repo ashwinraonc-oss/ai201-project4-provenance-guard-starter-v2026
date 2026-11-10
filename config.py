@@ -89,7 +89,17 @@ SIGNAL_DISAGREEMENT_THRESHOLD = 0.35
 # that decide who pays for it.
 
 HUMAN_THRESHOLD = 0.35
-AI_THRESHOLD = 0.65
+
+# Raised from 0.65 in unit 8, Milestone 5 — see README's "The Improvement".
+# Criterion 1's run showed short, plain, declarative sentences (not AI-
+# generated, just mundane) landing at 0.66-0.73 combined: both signals agree
+# that kind of text is "predictable," which is a real blind spot in signal
+# one, not noise. Moving this to 0.72 keeps the obviously-AI calibration
+# text (0.7714) flagged while reclassifying 3 of the 4 false positives as
+# unsure instead of ai. The trade this README already names: fewer wrong
+# accusations, and more AI text that happens to score 0.65-0.72 now reads as
+# unsure instead of ai.
+AI_THRESHOLD = 0.72
 
 # ⚠️ One thing that catches people out in Milestone 5. A weighted average can
 # only land between its two inputs — so while `style_signal` is still the stub

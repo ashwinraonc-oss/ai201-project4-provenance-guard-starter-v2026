@@ -205,6 +205,18 @@ The original `decided` entry stays exactly where it was — the appeal is a seco
 - *What came back:* a four-sentence, plainly-written paragraph about walking to the store scored `combined_score` 0.69 — solidly in the `ai` band. Both signals contributed: low vocabulary variety and short, even sentences read as AI-like on signal two, and a predictable, common-word paragraph reads as AI-like on signal one, exactly as both files' own docstrings warned.
 - *What I changed:* nothing in the code — this is the real version of the false positive Milestone 1 asked me to trace on paper, now showing up in my own numbers on my first real test rather than staying hypothetical. I didn't retune the thresholds to make this one example pass, because that would be fitting the system to a single input rather than fixing the underlying blind spot. I wrote it up honestly here and flagged it as the concrete evidence criterion 1 will actually be measured against next unit.
 
+**Moment 3**
+
+- *What I asked for:* when building `scenarios.py` for criterion 1 (false positives on plain writing), I need the submitter's own writing — someone else's prose doesn't test what the criterion is actually asking. I'm not the submitter, so I asked myself (no model call needed here) whether I could proceed at all.
+- *What came back:* nothing to fabricate around — there's no legitimate way to generate "my own writing" on someone else's behalf.
+- *What I changed:* I wrote 10 disclosed placeholder sentences, marked clearly as a stand-in in `scenarios.py`'s own comments and in every place the README reports on criterion 1, and treated every verdict touching it as provisional rather than final. Same thing happened with `attack_set.zip` — a TF-distributed file this repo never received — which I flagged rather than inventing an attack set myself; a self-written one wouldn't test anything I hadn't already anticipated.
+
+**Moment 4**
+
+- *What I asked for:* once criterion 1's real run showed 4 of 10 plain sentences flagged `ai`, I asked for the actual cause, not just "lower the threshold until it passes" — I wanted to know whether the fix was in the route, either signal, the combining rule, or the label mapping before touching anything.
+- *What came back:* all 4 false positives had `model_score` 0.64-0.75 and `style_score` 0.60-0.71 — both signals agreeing these short, plain sentences are "predictable," which is a structural property of signal one (and secondarily signal two) that has nothing to do with authorship.
+- *What I changed:* moved `AI_THRESHOLD` from 0.65 to 0.72 — past that specific score cluster — rather than reweighting the signals (both had already agreed, so reweighting wouldn't separate them) or changing the combining rule (the disagreement rule doesn't trigger here; the two signals aren't disagreeing, they're agreeing wrongly). I verified the obviously-AI calibration text (0.7714) still clears the new line before trusting the change.
+
 <!-- ═══════════════════════ UNIT 8 — THE TEST ═══════════════════════ -->
 
 ---
@@ -379,36 +391,83 @@ asks for). Full output: `results/run_2026-11-10_1815_before.md` and
 
 ## The Improvement
 
-**What I changed:**
+**What I changed:** `config.AI_THRESHOLD` from 0.65 to 0.72
+([config.py](config.py)).
 
-**Which diagnosis pointed at it:**
+**Which diagnosis pointed at it:** criterion 1's diagnosis above — the 4
+false-positive `ai` labels on plain, mundane sentences all had combined
+scores of 0.658-0.731, just past the old 0.65 line, because both signals
+agree that short declarative sentences are "predictable" regardless of who
+wrote them. That's a blind spot in signal one (and, less severely, signal
+two), not something a combining-rule or label-text change would fix — it
+needed the ai/unsure line moved further from that cluster.
+
+**Result** (`run_eval.py --label after`, `results/run_2026-11-10_1822_after.md`):
+
+| Criterion | Before | After |
+|---|---|---|
+| 1. false positives on plain human writing | 4 of 10 flagged `ai` (MISS) | 1 of 10 (MET) — "sister" case (model 0.74, style 0.71, combined 0.73) still clears 0.72 |
+| 2. score spread between obvious cases | gap 0.6119 | gap 0.6119, unchanged |
+| 3. label coverage | all 3 present | all 3 present, unchanged |
+| 5. bad input never crashes the service | 4/4 → 400 | 4/4 → 400, unchanged |
+
+Criterion 1 is still provisional — raised to MET against the same disclosed
+placeholder text, not the submitter's own writing (see Run Log above). I'm
+confident the *mechanism* is real (both signals genuinely conflate
+"predictable" with "AI-written" on short plain sentences), but I can't claim
+the actual target number is met until this is re-run against real writing.
 
 ### Attack Run — After
 
-<!-- Same format. `run_attacks.py --label after` -->
+**Still blocked** — same reason as "Attack Run — Before": no `attack_set.zip`
+in this repo. Nothing to re-run against.
 
-
-
-**Did it help, and how do I know:**
-
-<!-- Widening the unsure band usually fixes one problem and creates another.
-     Reporting that trade honestly is worth full credit. -->
-
-
+**Did it help, and how do I know:** For the one criterion it targeted, yes —
+3 of the 4 false-positive labels on plain text moved from `ai` to `unsure`,
+verified with a real request against the running server
+(`curl .../submit` on the "coffee" text returned `unsure` post-change,
+`ai` pre-change) and then confirmed across all 3 `run_eval.py` trials. The
+cost is the one named in `config.py` already: genuinely AI-generated text
+landing in the 0.65-0.72 band now reads as `unsure` instead of `ai` — this
+system now needs a clearer signal before it will accuse anyone, which means
+some real AI text that used to get flagged now won't. I can't measure how
+often that happens without the attack set, so I'm stating the trade-off
+rather than a number for it.
 
 ---
 
 ## What's Still Broken
 
-<!-- For each attack still getting through and each criterion still missed:
-     what you'd do, and why you stopped. -->
+- **Criterion 1 is unverified against real evidence.** It now reads MET
+  (1 of 10), but only against placeholder text I wrote myself, disclosed
+  throughout. I'd re-run it against the actual submitter's own plain writing
+  before trusting that number for anything real.
+- **The attack set never ran.** `attack_set.zip` isn't in this repo, so
+  there's no evidence about adversarial inputs — paraphrase attacks, typo
+  injection, formatting tricks — specifically, only about the plain,
+  non-adversarial cases `scenarios.py` covers. Someone deliberately trying
+  to evade this system was never tested.
+- **Signal one's blind spot is narrowed, not closed.** Raising
+  `AI_THRESHOLD` moved the line past the specific cluster of scores I saw,
+  but any genuinely AI-generated text that happens to land at 0.65-0.72 —
+  or any human writing that happens to land above 0.72 — gets the wrong
+  label by construction. A threshold move can't fix a signal that conflates
+  "predictable" with "AI-written"; it only relocates where that confusion
+  bites.
+- **The "sister" case still flags `ai`** at a combined 0.7311, driven by a
+  model_score of 0.7423 — high confidence from signal one on a very mundane
+  sentence. One borderline case surviving the fix is expected; it's the
+  one still worth watching if real submitter text comes in and shows a
+  similar pattern.
 
-
-
-**The trade I'd make if this ran for real:**
-
-<!-- Two sentences. Fewer wrong accusations means more AI text getting through.
-     Say which way you'd go and WHO PAYS FOR IT. -->
+**The trade I'd make if this ran for real:** I'd keep erring toward fewer
+wrong accusations, even though that means some real AI-assisted text gets
+labeled `unsure` and passes through unflagged. A false `ai` accusation
+costs a specific person — the writer who gets told their own work looks
+machine-written and has to appeal to clear their name — while a missed
+detection costs something diffuse and shared (the integrity of the system
+in general). I'd rather spread that second cost thin than hand the first
+one to someone who did nothing wrong.
 
 
 
