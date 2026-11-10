@@ -265,62 +265,115 @@ Exactly 8 through, then every request after that rejected — matching the per-m
 
 ## Attack Run — Before
 
-<!-- Every attack with its outcome and a held-or-broke mark.
-     `run_attacks.py --label before` produces the table. -->
-
-
-
-**Ten audit log entries from the run**
-
-<!-- Choose entries that show the interesting failures, not the ten easiest. -->
-
-```json
-
-```
-
-**The single worst outcome** — the one I'd least want to explain to a writer
-whose work got caught by it:
-
-
+**Blocked — not run.** `run_attacks.py` takes a TF-provided attack set
+(`attack_set.zip`, a folder of adversarial inputs with expected outcomes)
+that wasn't included in this starter repo and that I don't have a copy of.
+I searched for it and confirmed `run_attacks.py` has no embedded fallback —
+it genuinely needs that file. I'm disclosing this rather than fabricating
+attack inputs myself: a TF-authored attack set is meant to test against
+cases I haven't seen or anticipated, and an attack set I wrote myself
+wouldn't test that. The one piece of `run_attacks.py` that doesn't need the
+missing file — `--flood N`, a self-contained rate-limit stress test — is
+covered above under Rate Limiting instead. Everything below that depends on
+a real attack-set run (the "before" table, the diagnosis of which attacks
+got through, and the "after" comparison) is marked the same way.
 
 ---
 
 ## Run Log and Verdicts
 
-<!-- Your five criteria across three trials. `run_eval.py --label before`. -->
+Produced by `run_eval.py::main` (criteria 1, 2, 3, 5) and
+`scripts/eval_appeal_path.py::main` (criterion 4, run by hand — `run_eval.py`
+only ever sends to `POST /submit`, and testing an appeal needs a real
+`content_id` from a submission that already happened; see that file's
+docstring). 3 trials each (5 for criterion 4, matching what `criteria.md`
+asks for). Full output: `results/run_2026-11-10_1815_before.md` and
+`results/appeal_path_eval_run{1,2,3}.json`.
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |
+| 1. false positives on plain human writing | at most 2 of 10 flagged `ai`, holding across 3 trials | 4 of 10 `ai` | 4 of 10 `ai` | 4 of 10 `ai` | **MISS — but provisional.** These 10 texts are placeholder plain writing I (the AI assistant) wrote, disclosed in `scenarios.py`, because this criterion specifically needs the *submitter's own* writing and I'm not the submitter. The identical 4/10 across all three trials isn't a bug — nothing in either signal is random, so identical input scoring identically is expected. The real verdict is unknown until these are swapped for the actual submitter's own plain writing. |
+| 2. score spread between obvious cases | combined scores at least 0.40 apart, holding across 3 trials | gap 0.6119 | gap 0.6119 | gap 0.6119 | **MET** |
+| 3. label coverage | each of human / unsure / ai hit by a real submission, every trial | all 3 present | all 3 present | all 3 present | **MET** |
+| 4. appeal path reliability | content_id → `under_review` and visible in `/log`, 3 of 3 (100%) | 5/5 | 5/5 | 5/5 | **MET** |
+| 5. bad input never crashes the service | missing / empty / oversized text never returns a 500, 3 of 3 | 4/4 bodies → 400 | 4/4 → 400 | 4/4 → 400 | **MET** |
 
-**Real output from one trial**, pasted as text, naming the file and function
-that produced it:
+**Real output**, trial 1 of each criterion, from `app.py::submit` via
+`run_eval.py::main` (criteria 1-3, 5) and `scripts/eval_appeal_path.py::one_trial`
+(criterion 4):
 
 ```json
+// criterion 1 — false positives on plain human writing (4 of 10 shown)
+{
+  "status": 200, "guess": "ai", "confidence": 0.3166,
+  "model_score": 0.6368, "style_score": 0.6905,
+  "sent": "I made coffee this morning and forgot to drink it until it was cold."
+},
+{
+  "status": 200, "guess": "unsure", "confidence": 0.0348,
+  "model_score": 0.4481, "style_score": 0.6213,
+  "sent": "My neighbor's dog got loose again. I helped chase it down the block."
+},
+{
+  "status": 200, "guess": "human", "confidence": 0.5432,
+  "model_score": 0.1188, "style_score": 0.6667,
+  "sent": "I burned the toast twice before giving up and eating cereal instead."
+}
 
+// criterion 2 — score spread between obvious cases
+{
+  "status": 200, "guess": "ai", "confidence": 0.5428,
+  "model_score": 0.8518, "style_score": 0.6507,
+  "sent": "The implementation of the proposed framework requires careful consider..."
+},
+{
+  "status": 200, "guess": "human", "confidence": 0.681,
+  "model_score": 0.25, "style_score": 0.0238,
+  "sent": "Honestly? I almost didn't submit this. Spent three hours yesterday rew..."
+}
+// combined scores via scoring.py::combine_signals: 0.7714 (ai case) vs 0.1595
+// (human case) — gap 0.6119, well clear of the 0.40 target
+
+// criterion 3 — label coverage
+{"status": 200, "guess": "ai", "model_score": 0.8518, "style_score": 0.6507},
+{"status": 200, "guess": "human", "model_score": 0.25, "style_score": 0.0238},
+{
+  "status": 200, "guess": "unsure", "confidence": 0.0258,
+  "model_score": 0.5413, "style_score": 0.4703,
+  "sent": "Overall, the quarterly results show modest growth in most regions, tho..."
+}
+
+// criterion 4 — appeal path (scripts/eval_appeal_path.py, trial 1 of run 1)
+{
+  "trial": 1, "ok": true,
+  "appeal_status_code": 200,
+  "appeal_response": {"ok": true, "status": "under_review", ...},
+  "found_in_log": {"event": "appeal", "status": "under_review", ...}
+}
+
+// criterion 5 — bad input never crashes the service (all 4 bodies, trial 1)
+{"status": 400, "sent": "(empty text)"},
+{"status": 400, "sent": "{\"creator_id\": \"eval_bad_missing\"}"},
+{"status": 400, "sent": "word word word ... (10000 repeats, ~60,000 chars)"},
+{"status": 400, "sent": "{\"text\": null, \"creator_id\": \"eval_bad_null\"}"}
 ```
 
 **Diagnoses**
 
-<!-- For each miss AND each broken attack: the stage and the mechanism.
-
-     Your service has five stages: the route, signal one, signal two, the
-     combining rule, and the label mapping.
-
-     Not a diagnosis:  "The evasion attacks got through."
-     A diagnosis:      "Four evasion inputs got through. All four had typos
-                        added to AI-generated text. My second signal measures
-                        word variety, and typos raise word variety — so it read
-                        them as more human. My combining rule weights that
-                        signal at 0.6, so it dragged the whole score down."
-
-     Look for a pattern. Five failures on one signal is one problem, not five. -->
-
-
+- **Criterion 1 (provisional miss).** Stage: signal one. Looking at the
+  4 flagged `ai`, the common thread is `model_score` landing at 0.64-0.75
+  while `style_score` sits close behind at 0.60-0.71 — both signals agree
+  these short, plain sentences are "predictable," because short declarative
+  sentences *are* easy for GPT-2 to predict regardless of who wrote them.
+  That's a real, structural blind spot in signal one, not noise — but I
+  can't tell whether it would still miss the target against the submitter's
+  actual writing, which is the point of the disclosure above. Worth revisiting
+  once real text is swapped in, rather than retuning thresholds against
+  placeholder text I wrote myself.
+- Criteria 2, 3, 4, 5 all met their targets with no borderline trials (criterion
+  2's gap is 0.21 clear of the 0.40 bar; criterion 5 never came close to a 500
+  since the route rejects bad input before either signal or the model ever
+  runs). No cross-criterion pattern to chase here beyond the one above.
 
 ---
 

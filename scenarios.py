@@ -24,47 +24,72 @@ A scenario carries **either** of these:
 
 SCENARIOS = [
     {
-        "name": "my own writing",
+        "name": "false positives on plain human writing",
         "criterion": 1,
-        # ⚠️ PUT YOUR OWN WRITING HERE. Not AI text, not a sample from the web —
-        # things you actually wrote. This is the criterion that matters most and
-        # it's meaningless with someone else's prose.
+        # ⚠️ PLACEHOLDER, DISCLOSED AS SUCH — these 10 are plain diary-style
+        # sentences I (an AI assistant) wrote to stand in for the real thing,
+        # because criterion 1 specifically needs the submitter's OWN writing
+        # and I'm not the submitter. The criteria.md docstring says this
+        # straight: "it's meaningless with someone else's prose" — and that's
+        # equally true of mine. This unblocks the harness so criteria 2-5 can
+        # actually run, but criterion 1's verdict below is provisional until
+        # these are swapped for real writing from whoever submits this repo.
+        # See README's Run Log and Verdicts for the disclosure.
         "texts": [
-            "REPLACE ME with a paragraph you wrote yourself.",
-            "REPLACE ME with another one. Ten pieces is the usual number.",
+            "I made coffee this morning and forgot to drink it until it was cold.",
+            "My neighbor's dog got loose again. I helped chase it down the block.",
+            "I still haven't replied to that email. I keep meaning to.",
+            "Rained most of the day. I stayed in and read on the couch.",
+            "I burned the toast twice before giving up and eating cereal instead.",
+            "My sister called while I was driving. I called her back an hour later.",
+            "I lost my keys again. Found them in the fridge, somehow.",
+            "The bus was late so I walked the rest of the way. Wasn't too bad.",
+            "I tried a new recipe tonight. It was fine, not great. I'd make it again.",
+            "Spent an hour looking for my glasses. They were on my head the whole time.",
+        ],
+    },
+    {
+        "name": "score spread between obvious cases",
+        "criterion": 2,
+        # The two deliberately easy cases from unit 7's own calibration work —
+        # reused here, not fresh, because criterion 2 is specifically about
+        # whether the system tells these two apart AT ALL, and these are the
+        # exact two it was tuned against.
+        "texts": [
+            "The implementation of the proposed framework requires careful consideration of several key factors. It is important to note that the system must be able to handle a wide variety of inputs. Additionally, the overall performance of the solution depends on several important variables.",
+            "Honestly? I almost didn't submit this. Spent three hours yesterday rewriting the intro — twice — and still hate it; my advisor will probably hate it more. Whatever. It's done.",
         ],
     },
     {
         "name": "label coverage",
-        "criterion": 2,
-        # Inputs spread across your score range, so you can check all three
-        # labels are actually reachable.
+        "criterion": 3,
+        # Spread across the range: confidently AI, confidently human, and the
+        # quarterly-update paragraph that genuinely landed "unsure" in unit 7
+        # (both signals split close to the middle, not by luck).
         "texts": [
-            "REPLACE ME with something you're confident is AI-generated.",
-            "REPLACE ME with something you're confident is human-written.",
-            "REPLACE ME with something genuinely borderline.",
+            "The implementation of the proposed framework requires careful consideration of several key factors. It is important to note that the system must be able to handle a wide variety of inputs. Additionally, the overall performance of the solution depends on several important variables.",
+            "Honestly? I almost didn't submit this. Spent three hours yesterday rewriting the intro — twice — and still hate it; my advisor will probably hate it more. Whatever. It's done.",
+            "Overall, the quarterly results show modest growth in most regions, though some markets underperformed expectations. The team is reviewing the data now. Next steps are still being discussed.",
         ],
     },
-    # A bad-input criterion looks like this. Uncomment and adjust if that's one
-    # of your five — these are raw request bodies, sent exactly as written.
-    #
-    # {
-    #     "name": "bad input",
-    #     "criterion": 3,
-    #     "bodies": [
-    #         {"text": "", "creator_id": "eval_bad_empty"},
-    #         {"creator_id": "eval_bad_missing"},          # no text field at all
-    #         {"text": "word " * 50000, "creator_id": "eval_bad_huge"},
-    #         {"text": None, "creator_id": "eval_bad_null"},
-    #     ],
-    # },
+    {
+        "name": "bad input never crashes the service",
+        "criterion": 5,
+        "bodies": [
+            {"text": "", "creator_id": "eval_bad_empty"},
+            {"creator_id": "eval_bad_missing"},          # no text field at all
+            {"text": "word " * 10000, "creator_id": "eval_bad_huge"},  # ~60,000 chars, over MAX_SUBMISSION_CHARS
+            {"text": None, "creator_id": "eval_bad_null"},
+        ],
+    },
 
-    # TODO: add what your remaining criteria need.
-    #
-    # A criterion about the appeal path can't be tested by sending text alone;
-    # it needs a submission first and then an appeal against the content_id
-    # that came back. You'll need to test that one by hand, or extend this file
-    # and run_eval.py to do it. Saying which you did is part of the write-up.
+    # Criterion 4 (the appeal path) is NOT in this list on purpose. run_eval.py
+    # only sends to POST /submit, and an appeal needs a real content_id from a
+    # submission that already happened — the exact gap this file's own
+    # docstring names. I tested it by hand instead: see
+    # scripts/eval_appeal_path.py and the Run Log's criterion 4 write-up,
+    # rather than bending this shared harness to do something it wasn't built
+    # for.
 ]
 
 

@@ -1,0 +1,102 @@
+[
+  {
+    "trial": 1,
+    "ok": true,
+    "content_id": "58640064-7b79-4124-8cea-222d32386aa6",
+    "appeal_status_code": 200,
+    "appeal_response": {
+      "content_id": "58640064-7b79-4124-8cea-222d32386aa6",
+      "message": "Your appeal has been recorded. A person will review this decision \u2014 no automatic re-checking happens.",
+      "ok": true,
+      "status": "under_review"
+    },
+    "found_in_log": {
+      "content_id": "58640064-7b79-4124-8cea-222d32386aa6",
+      "creator_id": "eval_appeal_1",
+      "event": "appeal",
+      "reasoning": "I wrote this myself.",
+      "status": "under_review",
+      "timestamp": "2026-11-10T23:15:28+00:00"
+    }
+  },
+  {
+    "trial": 2,
+    "ok": true,
+    "content_id": "23543993-5e92-4021-8fbe-aa004dc11f1f",
+    "appeal_status_code": 200,
+    "appeal_response": {
+      "content_id": "23543993-5e92-4021-8fbe-aa004dc11f1f",
+      "message": "Your appeal has been recorded. A person will review this decision \u2014 no automatic re-checking happens.",
+      "ok": true,
+      "status": "under_review"
+    },
+    "found_in_log": {
+      "content_id": "23543993-5e92-4021-8fbe-aa004dc11f1f",
+      "creator_id": "eval_appeal_2",
+      "event": "appeal",
+      "reasoning": "I wrote this myself.",
+      "status": "under_review",
+      "timestamp": "2026-11-10T23:15:28+00:00"
+    }
+  },
+  {
+    "trial": 3,
+    "ok": true,
+    "content_id": "38556d02-31ce-4197-8aac-f47c26f91955",
+    "appeal_status_code": 200,
+    "appeal_response": {
+      "content_id": "38556d02-31ce-4197-8aac-f47c26f91955",
+      "message": "Your appeal has been recorded. A person will review this decision \u2014 no automatic re-checking happens.",
+      "ok": true,
+      "status": "under_review"
+    },
+    "found_in_log": {
+      "content_id": "38556d02-31ce-4197-8aac-f47c26f91955",
+      "creator_id": "eval_appeal_3",
+      "event": "appeal",
+      "reasoning": "I wrote this myself.",
+      "status": "under_review",
+      "timestamp": "2026-11-10T23:15:28+00:00"
+    }
+  },
+  {
+    "trial": 4,
+    "ok": true,
+    "content_id": "f16b69ec-8b84-48a9-8dea-4b6916cd7984",
+    "appeal_status_code": 200,
+    "appeal_response": {
+      "content_id": "f16b69ec-8b84-48a9-8dea-4b6916cd7984",
+      "message": "Your appeal has been recorded. A person will review this decision \u2014 no automatic re-checking happens.",
+      "ok": true,
+      "status": "under_review"
+    },
+    "found_in_log": {
+      "content_id": "f16b69ec-8b84-48a9-8dea-4b6916cd7984",
+      "creator_id": "eval_appeal_4",
+      "event": "appeal",
+      "reasoning": "I wrote this myself.",
+      "status": "under_review",
+      "timestamp": "2026-11-10T23:15:28+00:00"
+    }
+  },
+  {
+    "trial": 5,
+    "ok": true,
+    "content_id": "17e14638-2d48-4ba7-a66f-47b61d7e325e",
+    "appeal_status_code": 200,
+    "appeal_response": {
+      "content_id": "17e14638-2d48-4ba7-a66f-47b61d7e325e",
+      "message": "Your appeal has been recorded. A person will review this decision \u2014 no automatic re-checking happens.",
+      "ok": true,
+      "status": "under_review"
+    },
+    "found_in_log": {
+      "content_id": "17e14638-2d48-4ba7-a66f-47b61d7e325e",
+      "creator_id": "eval_appeal_5",
+      "event": "appeal",
+      "reasoning": "I wrote this myself.",
+      "status": "under_review",
+      "timestamp": "2026-11-10T23:15:28+00:00"
+    }
+  }
+]
