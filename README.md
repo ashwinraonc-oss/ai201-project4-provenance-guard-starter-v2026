@@ -211,24 +211,54 @@ The original `decided` entry stays exactly where it was — the appeal is a seco
 
 ## Rate Limiting
 
-**My limits:** ___ per minute, ___ per day
+**My limits:** 8 per minute, 100 per day.
 
-**Why those numbers and not others:**
-<!-- Think about two people: a real writer submitting their own work a few
-     times an hour, and a script sending a thousand variations to map your
-     thresholds. Your numbers have to be liveable for the first and hostile to
-     the second. -->
+**Why those numbers and not others:** a real writer revising their own draft might submit a handful of versions in one sitting — 2 to 5 is typical even when iterating hard — so 8/minute is a generous cushion above that; nobody doing their own real work ever notices it. A script trying to map where my thresholds actually sit by sending many small variations hits the wall on request 9, not after it's had room to characterize the boundary cheaply. 100/day comfortably covers even a very active real user (20-30 genuine submissions in a day would already be a lot for one person), while still bounding a slow-drip probe that paces itself just under the per-minute limit specifically to dodge it.
 
-**What a caller counts as:** <!-- per address, or per creator_id? They fail
-differently — one script can look like a thousand callers, and one household
-can look like one. -->
+**What a caller counts as:** per `creator_id`, not per address — `app.py::rate_limit_key` reads `creator_id` out of the request body and falls back to the caller's address only if it's missing or not a string. I chose `creator_id` on purpose: a script hammering the endpoint from one machine but rotating a fake `creator_id` on every request would dodge an address-based limit entirely, while a real household or office sharing one IP address would get wrongly throttled as if they were one caller. `creator_id` is the thing that actually corresponds to "one writer" in this system, so it's the thing the limit should bind to. The real tradeoff: an attacker who also fakes a fresh `creator_id` on every request defeats this just as easily — rate limiting by a field the caller controls is only as good as making that field cost something to fake, which this unit's scope doesn't cover.
 
 **The run of status codes when I pushed past it:**
 
-<!-- python run_attacks.py --flood 15 -->
+```
+$ python run_attacks.py --flood 15
 
+15 submissions as 'flood_tester' against http://127.0.0.1:5000
+The first one is slow while the model loads.
+
+  [ 1/15] 200
+  [ 2/15] 200
+  [ 3/15] 200
+  [ 4/15] 200
+  [ 5/15] 200
+  [ 6/15] 200
+  [ 7/15] 200
+  [ 8/15] 200
+  [ 9/15] 429
+  [10/15] 429
+  [11/15] 429
+  [12/15] 429
+  [13/15] 429
+  [14/15] 429
+  [15/15] 429
+
+============================================================
+200 200 200 200 200 200 200 200 429 429 429 429 429 429 429
+============================================================
+
+7 of 15 were rate limited.
 ```
 
+Exactly 8 through, then every request after that rejected — matching the per-minute limit precisely. The rejections land in the audit log too (via the starter's own 429 handler, `audit.log_rejection`), confirmed with `GET /log`:
+
+```json
+{
+  "timestamp": "2026-11-10T23:12:53+00:00",
+  "creator_id": "flood_tester",
+  "event": "rejected",
+  "status": "rejected",
+  "reason": "rate_limited",
+  "limit": "8 per 1 minute"
+}
 ```
 
 ---
