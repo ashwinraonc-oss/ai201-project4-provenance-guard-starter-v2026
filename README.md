@@ -931,4 +931,216 @@ spend running it locally, and inventing a specific cloud price per CPU-
 second here would be guessing, not measuring — the one thing this section
 is supposed to not do.
 
+**Run Log and Verdicts**
+
+Five criteria (`criteria.md`, Capstone section), three trials each, run by
+`scripts/run_capstone_eval.py` — a dedicated harness, not `run_eval.py`,
+for the same reason unit 8's appeal-path criterion needed one: none of
+these five reduce to "send texts, read back a guess." Full output:
+`results/capstone_eval_2026-11-17_1315_before.json`.
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Non-Latin script → `unscorable` | 10 of 10, holding across 3 trials | 10/10 | 10/10 | 10/10 | **MET** |
+| 2. Real English never falsely gated | 0 of 20, holding across 3 trials | 0/20 | 0/20 | 0/20 | **MET** |
+| 3. The gate itself stays under 5ms | 10 of 10, holding across 3 trials | 10/10 | 10/10 | 10/10 | **MET** |
+| 4. Short non-Latin snippets fall through safely | 10 of 10, holding across 3 trials | 10/10 | 10/10 | 10/10 | **MET** |
+| 5. Scoring latency stays under 100ms | at least 18 of 20, holding across 3 trials | 20/20 | 20/20 | 20/20 | **MET** |
+
+**Real output**, trial 1 of each criterion:
+
+```json
+// criterion 1 — a real Arabic sentence, gated correctly
+{"id": "ar1", "status": 200, "guess": "unscorable", "ok": true}
+// criterion 1 — a real Greek sentence, gated correctly
+{"id": "el2", "status": 200, "guess": "unscorable", "ok": true}
+
+// criterion 2 — a formal human report, correctly left alone (scored
+// normally, "unsure" — still passed through both real signals, just never
+// gated)
+{"id": "FP02", "status": 200, "guess": "unsure", "false_trigger": false}
+// criterion 2 — a non-native speaker's careful English, correctly left
+// alone (scored "ai" — the exact kind of false positive unit 8 already
+// found; the gate was never meant to fix THAT, only the non-Latin-script
+// one, and this entry shows it correctly stayed out of the way)
+{"id": "FP03", "status": 200, "guess": "ai", "false_trigger": false}
+
+// criterion 3 — the gate's own cost on real non-Latin sentences
+{"id": "ar1", "duration_ms": 0.04, "ok": true}
+{"id": "ru2", "duration_ms": 0.03, "ok": true}
+{"id": "el3", "duration_ms": 0.04, "ok": true}
+
+// criterion 4 — "Ω Ω", two Greek letters and a space, correctly NOT gated
+// (too little to judge) and correctly not a 500. It scored normally
+// instead of hitting detector.py's too-short rejection — two letters was
+// apparently enough tokens, which I hadn't predicted and checked here
+// rather than assumed.
+{"id": "edge04", "status": 200, "guess": "unsure", "crashed": false, "gated": false, "ok": true}
+
+// criterion 5 — real scored submissions, all well under the 100ms bar
+{"id": "FP01", "duration_ms": 38.48, "ok": true}
+{"id": "plain05", "duration_ms": 14.13, "ok": true}
+{"id": "calib_ai", "duration_ms": 23.86, "ok": true}
+```
+
+**All five criteria MET, holding across all three trials — no diagnosis of
+a miss needed, because there wasn't one.** That's a real result, not a
+reason to stop looking: see **The Improvement** below for what going
+further anyway found.
+
+**Were the targets set low?** Partly, yes, and I'd say so plainly rather
+than let a clean sweep read as "nothing left to learn here":
+- **Criterion 5's 100ms bar is loose against what was actually measured.**
+  Across all 60 real scored submissions (20 texts × 3 trials), the
+  slowest was 40.45ms and the mean was 21.96ms — I'd tighten this to
+  **at least 18 of 20 under 50ms**, which the same data still clears, but
+  which would actually catch a real regression instead of needing a
+  request to get roughly 2.5× slower before the criterion noticed.
+- **Criterion 3's 5ms bar, by contrast, turned out to be hiding something
+  real** rather than being merely loose — see **The Improvement**: the
+  gate's cost scales with submission length, and criterion 3 only ever
+  tested ~100-character sentences. I'm not tightening this one; I'm
+  saying plainly that it was testing the wrong thing, which **The
+  Improvement** section fixes at the code level, not just the target.
+
+**The Improvement**
+
+**What I changed:** `script_gate.py::latin_letter_ratio` now stops
+scanning a submission after the first 2,000 letters
+(`MAX_LETTERS_TO_SCAN`), instead of always scanning every letter in the
+whole thing.
+
+**Which diagnosis pointed at it:** none of the five criteria missed, so
+there was nothing a verdict table told me to go fix. I went looking
+anyway, because "it passed" and "it has no problems" aren't the same
+claim, and tested something none of my five criteria did: a submission
+near `config.MAX_SUBMISSION_CHARS` (30,000 characters) rather than the
+~100-character sentences every one of my test inputs actually used.
+Measured on a ~28,000-character all-Arabic submission: **~3.0ms mean**,
+versus ~0.01ms on a short sentence — still comfortably under criterion
+3's 5ms bar in isolation, but a 300× difference criterion 3 was never
+positioned to catch, because the cost scales with length and nothing I
+tested was anywhere near the length that matters.
+
+I also went looking at a second question — a short English sentence that
+quotes a long foreign-script phrase (`"She just said: مرحبا بكم جميعا في
+هذا المكان الجديد والمريح."`, ratio 0.229, correctly gated as
+`unscorable` by the current logic) — and tried two fixes before rejecting
+both: swapping `unicodedata.name()` for direct Unicode codepoint-range
+checks (faster, but when I checked it against every alphabetic character
+from U+0020-U+3000, it disagreed with the correct answer on 201 of 5,847
+real letters — actively wrong, not just an approximation), and splitting
+on sentence boundaries before computing the ratio (doesn't apply here at
+all — there's no sentence boundary between the English frame and the
+quote, just a colon). I'm not fixing this one. Whether a submission that's
+mostly a quoted foreign-language passage should be scored as English or
+treated as unscorable is a real, defensible judgment call either way, and
+an unverified fix that happens to flip this one example isn't actually
+evidence I've resolved the judgment call — it's just evidence I've hidden
+it. Documented honestly instead; see **What's Still Broken**.
+
+**Result** — `scripts/test_script_gate.py` (correctness) and a direct
+timing script (performance), both before and after:
+
+| Check | Before | After |
+|---|---|---|
+| All 8 correctness cases in `test_script_gate.py` | 8/8 pass | 8/8 pass, identical |
+| Short sentence (~60 chars), mean of 20 runs | 0.010ms | 0.011ms — noise, not a regression |
+| ~28,000-char submission, mean of 20 runs | 3.018ms | 0.358ms |
+| Full capstone eval, 3 trials, all 5 criteria | all MET | all MET, identical — none of my test inputs were anywhere near 2,000 letters, so this specific re-run couldn't have told the difference either way |
+
+**Did it help, and how do I know:** yes, for the thing it targeted — an
+~8× reduction in worst-case cost (3.018ms → 0.358ms), verified with the
+same direct timing method used to find the problem, not just re-reading
+the capstone eval (which, honestly, couldn't have shown this either way —
+worth saying plainly rather than letting "all criteria still MET" imply
+more than it does). It did *not* help with, and wasn't aimed at, the
+quoted-foreign-phrase question above — that's a separate, open design
+question, not a performance one, and conflating the two would have been
+the easy way to make this section look more resolved than it is.
+
+**What's Still Broken**
+
+- **A short English sentence that quotes a long foreign-script passage
+  gets gated the same as if it were written in that script.** Disclosed
+  above, deliberately not fixed. What I'd do with another unit: build a
+  small, labeled test set of real English writing that legitimately
+  quotes other scripts (not just the one example I found by hand) and
+  decide, with actual evidence about how often this happens in real
+  submissions, whether it's common enough to be worth the complexity of
+  handling quotation boundaries specially. Right now I have one
+  constructed example and a judgment call, not a measured rate — that's
+  why I stopped rather than ship a fix aimed at a sample size of one.
+- **The gate decides script over the whole submission (now the first
+  2,000 letters of it), not per-section.** A document that's genuinely
+  mixed — the first half in English, the second half in another script —
+  gets one verdict for the whole thing, decided mostly by whichever half
+  happens to load first under the new cap. This was already true before
+  this unit's fix and the fix doesn't make it worse, but it's a real
+  limitation of "one ratio for the whole text" that a per-section version
+  of this gate would need to address, and that's a bigger piece of work
+  than one unit's scope allows.
+- **Unit 8's bigger, unfixed problems are all still there**, unrelated to
+  this extension and out of scope on purpose: 9 of 10 evasion attacks
+  still get through, formal/correct human writing is still falsely
+  accused in most cases, and bolting unrelated text onto AI boilerplate
+  still reliably evades both signals. This unit closed one specific,
+  real gap (MF07's script bias) without touching any of the others —
+  naming that honestly here rather than letting a clean five-for-five
+  capstone run read as "the detector is fixed now."
+- **Target I'd tighten even though it was met:** criterion 5, from "18 of
+  20 under 100ms" to "18 of 20 under 50ms" — see the Run Log section
+  above for the real numbers (max 40.45ms, mean 21.96ms across 60 runs)
+  backing that.
+
+**The one thing I'd do first with another unit:** build the small, real
+test set of English-quoting-other-scripts examples named above, before
+touching the gate's logic at all. Every fix I considered for that
+question this unit was a guess about how common the case even is — and a
+fix aimed at a guess is exactly the kind of change this course has spent
+nine units arguing against making.
+
+**How I Used AI**
+
+**Moment 1**
+
+- *What I asked for:* before writing `script_gate.py`, I wanted the real
+  evidence for why it was worth building, not just a plausible-sounding
+  reason — so I asked for the exact MF07 entry from unit 8's attack-run
+  results and the actual numbers behind it, rather than describing the
+  problem from memory.
+- *What came back:* MF07's combined score (0.9438), its model and style
+  scores individually (0.9064 and 1.0), and the fact that it was the
+  single highest-confidence `ai` accusation in the entire 56-attack run —
+  against a sentence with nothing adversarial about it.
+- *What I changed:* I designed the gate around script, not language,
+  specifically because of what those numbers showed: style_score hit the
+  ceiling (1.0) on Arabic text, which told me the stylometry signal's
+  punctuation-and-word-splitting assumptions were actively misfiring on
+  non-Latin text, not just underperforming. A language identifier would
+  guess at something softer (is this Spanish-flavored or French-flavored
+  text); a script check answers the actual question signal two's own
+  failure raised.
+
+**Moment 2**
+
+- *What I asked for:* while building the one improvement (Milestone 6),
+  I considered replacing `unicodedata.name()` with direct Unicode
+  codepoint ranges for speed, and before trusting it, asked for it to be
+  checked against every alphabetic character in a wide Unicode range
+  rather than just the handful of test cases I already had, since my
+  hand-written Latin ranges were a guess at where the Latin Unicode
+  blocks actually start and stop.
+- *What came back:* 201 mismatches out of 5,847 real alphabetic
+  characters tested — mostly letters in the IPA Extensions block (like
+  "LATIN SMALL LETTER SCHWA"), which `unicodedata` correctly calls Latin
+  but which don't fall in any of the contiguous ranges I'd guessed.
+- *What I changed:* nothing — I kept the slower, correct
+  `unicodedata.name()` check and fixed the real performance problem a
+  different way (capping how many letters get scanned, not how each one
+  gets checked). The mismatch count is also why that section of **The
+  Improvement** names a specific number instead of just saying "I tried
+  this and it didn't work" — the number is what made it an easy, obvious
+  no rather than a judgment call I could've talked myself into either way.
+
 ---
