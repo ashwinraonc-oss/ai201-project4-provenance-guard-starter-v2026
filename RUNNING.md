@@ -232,6 +232,22 @@ system doesn't fit its host *before* you spend an evening watching it get
 killed is the skill unit 9 is actually testing. Write the arithmetic above in
 your write-up; that's the deliverable.
 
+### Capstone verification
+
+Tested for real, not assumed: cloned this exact repo into a fresh directory,
+made a fresh `.venv`, ran `pip install -r requirements.txt`, `python
+test.py`, then `PORT=5050 python app.py` on a separate port so it couldn't
+be mistaken for an already-running copy, and confirmed both a plain-English
+`/submit` and an Arabic one (the capstone's script-gate case) against that
+specific process with `curl`. Everything in the three commands above worked
+on the first try, with one wrinkle worth knowing about rather than finding
+out the hard way: **the ~550 MB model download does not happen again in a
+fresh checkout on a machine that's already pulled it once.** HuggingFace
+caches model weights at the user level (`~/.cache/huggingface`), not inside
+this project's folder — so "clean checkout" tests fresh code and fresh
+dependencies, but not a fresh model cache. A genuinely new machine still
+pays that 550 MB the first time; this one just already had.
+
 ---
 
 ## Where everything lives
@@ -247,6 +263,7 @@ your write-up; that's the deliverable.
 | `run_attacks.py` | Runs the attack set — **unit 8** |
 | `run_eval.py` | Runs your criteria three times — **unit 8** |
 | `scenarios.py` | What your test runs. **You fill this in** |
+| `script_gate.py` | Signal zero — unit 9's capstone extension. **New, not part of units 7/8** |
 | `criteria.md` | Your five criteria. **You write all five** |
 | `logs/audit.jsonl` | Your audit log. **Commit it** |
 | `results/` | Attack runs and run logs. **Commit them** |

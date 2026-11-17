@@ -737,4 +737,198 @@ one to someone who did nothing wrong.
 
 ---
 
-📖 **How to run this project: [RUNNING.md](RUNNING.md)**
+## Capstone
+
+Everything below this heading is this unit's work — the capstone extension
+to Provenance Guard. Everything above it is units 7 and 8, left as it was.
+
+**What This Extends**
+
+Provenance Guard, the AI-text detection service built in units 7 and 8 of
+this project. What's new: `script_gate.py`, a check that runs *before*
+either existing signal, decides whether the submitted text is even in a
+script those signals were built to read, and — if not — skips both signals
+entirely and returns a fourth label this service never had: `unscorable`.
+
+This isn't a hypothetical gap. Unit 8's own attack run found it directly:
+**MF07**, one ordinary Arabic sentence, scored **0.9438** combined — the
+single highest-confidence `ai` accusation this service produced on the
+entire 56-attack set, against the one input that had nothing adversarial
+about it at all. Neither signal was built with non-Latin script in mind —
+signal one is GPT-2, trained mostly on English; signal two's punctuation
+set and word-splitting assume Latin conventions — and MF07 is what both of
+them making a confident claim about a script they can't actually read
+looks like. This extension closes that specific gap rather than widening a
+threshold around it, which is the only kind of fix that doesn't just move
+the false accusation somewhere else.
+
+**The Shape**
+
+**C — extend one capability.** The new capability is the script gate
+itself: one new pre-signal check, one new response label, one new audit
+`status` value (`unscored`), logged with its own fields (`latin_ratio`,
+`letters_seen`) so it's never confused with a real `decided` or `rejected`
+entry. It decides *script*, not *language* — checking each letter's
+Unicode name against the Latin block via the standard-library
+`unicodedata` module, deliberately not a real language identifier, because
+script is exactly what the actual risk (MF07) is about, it's free to
+compute, deterministic across runs, and needs no new dependency.
+
+Out of scope, decided before building anything:
+- **Not touching signal one or signal two's internals.** `detector.py` and
+  `stylometry.py` are unchanged. The gate runs *before* them; it doesn't
+  change what they measure.
+- **Not building real language identification.** No `langdetect`, no
+  `fasttext`, no new dependency. A script check is honest about what it
+  can tell from the text in the time this unit allows; a language
+  identifier is a different, bigger piece of work.
+- **Not addressing the "bolted-on preamble" evasion** unit 8's attack run
+  also found (prepending unrelated text to AI boilerplate reliably evades
+  both signals). That's a real, separate problem in the signals
+  themselves, not something a pre-signal gate can fix, and it's its own
+  unit of work.
+- **Not rebuilding the interface, the combining rule, or the thresholds.**
+  Everything downstream of the gate is exactly what units 7 and 8 left it.
+
+All three shapes still deploy and instrument regardless of which is
+picked, and this unit does both alongside the capability: see **Running
+It** and **Instrumentation** below.
+
+**Running It**
+
+**Path B — local, with logs.** `RUNNING.md`'s own unit-9 section already
+worked out why, with the arithmetic: this service loads `torch` and GPT-2's
+~550 MB of weights into memory to score anything, and the free hosting
+tier this course uses gives 512 MB total — over budget before a single
+request arrives, with no persistent disk to avoid re-downloading the model
+after every idle spin-down. There's no configuration that fixes a memory
+budget that's smaller than the model. Path B isn't a fallback here; it's
+the only path that was ever going to fit.
+
+Start command, tested from a genuinely clean checkout (see
+**Instrumentation** below for what that caught):
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python app.py
+```
+
+Full detail, including the `gunicorn` command for a real (non-development)
+local server and the exact memory arithmetic, is in `RUNNING.md`.
+
+**Instrumentation**
+
+Every `/submit` call writes one record to `logs/audit.jsonl`, same as units
+7 and 8 — but this unit adds fields that weren't there before. Every
+record now carries: `timestamp`, `content_id`, `creator_id`, what came in
+(`text_length` — not the raw text itself, consistent with how this log has
+always avoided storing submitted writing), what came out (`guess`,
+`label`, `status`/`event`, and the three scores when there are any), and
+**`duration_ms`** — new this unit, measured with `time.perf_counter()` from
+the moment `app.py::submit` starts to the moment it returns, on *every*
+path out of the route, including every rejection. A rejected or gated
+request leaves exactly as real a trace as a scored one. The script gate
+adds two fields of its own when it fires: `latin_ratio` and `letters_seen`.
+
+Ten real entries, chosen to show the different record shapes, not the ten
+easiest — pulled with `curl "http://127.0.0.1:5000/log?limit=30"` and
+filtered to one test session:
+
+```json
+// 1. The new extension's own path — a real Arabic sentence, gated before
+// either signal ran. 0.21ms: no model call happened at all.
+{"content_id": "d54b81f4-a9b9-4fcb-a479-cca73a6c0739", "creator_id": "capstone_test_arabic",
+ "duration_ms": 0.21, "guess": "unscorable", "status": "unscored",
+ "latin_ratio": 0.0, "letters_seen": 88, "text_length": 105,
+ "model_score": null, "style_score": null, "combined_score": null}
+
+// 2. A failed run — missing `text` entirely, rejected before any content_id
+// is even minted.
+{"creator_id": "regress1", "event": "rejected", "reason": "missing_text",
+ "status": "rejected", "duration_ms": 0.01}
+
+// 3. A different failure mode — text too short for signal one to score
+// (detector.py's own ValueError path), still logged, still fast.
+{"content_id": "6bb050b6-6d98-45de-9ad1-0105582c7070", "creator_id": "regress3",
+ "event": "rejected", "reason": "text_too_short", "status": "rejected",
+ "text_length": 2, "duration_ms": 0.53,
+ "detail": "Text is too short to score — a few sentences at least."}
+
+// 4. An ordinary scored submission, both signals disagreeing enough to land
+// unsure.
+{"content_id": "9adee916-bb9d-40cd-887b-a23e497ebbfc", "creator_id": "capstone_test_english",
+ "guess": "unsure", "status": "decided", "model_score": 0.6368, "style_score": 0.6905,
+ "combined_score": 0.6583, "text_length": 68, "duration_ms": 4402.86}
+// (4402ms here, not the usual ~20ms — this was the first request after the
+// dev server's auto-reloader restarted, so it paid the one-time model-load
+// cost. See What It Costs.)
+
+// 5. A clean decision, human.
+{"content_id": "3547de4b-97f7-4ac9-871b-363933392cb9", "creator_id": "regress4",
+ "guess": "human", "status": "decided", "model_score": 0.1025, "style_score": 0.6667,
+ "combined_score": 0.2153, "text_length": 68, "duration_ms": 36.57}
+
+// 6. The appeal on that same content_id, right after it in the log —
+// append-only, nothing overwritten.
+{"content_id": "3547de4b-97f7-4ac9-871b-363933392cb9", "creator_id": "regress4",
+ "event": "appeal", "reasoning": "regression test appeal", "status": "under_review"}
+
+// 7-10. Four of the ten warm, steady-state cost-measurement runs (see What
+// It Costs for all ten and the average).
+{"content_id": "a8334d99-6801-4311-b07b-dfa76ae74c2b", "creator_id": "cost_measure_4",
+ "guess": "human", "status": "decided", "model_score": 0.1532, "style_score": 0.6667,
+ "combined_score": 0.2559, "text_length": 114, "duration_ms": 21.56}
+{"content_id": "823fff3d-b1d1-4897-bcf2-033d89c4b6c8", "creator_id": "cost_measure_6",
+ "guess": "human", "status": "decided", "model_score": 0.1477, "style_score": 0.6667,
+ "combined_score": 0.2515, "text_length": 114, "duration_ms": 19.41}
+{"content_id": "8882b532-1ce1-4e6c-b3c9-369d171555a1", "creator_id": "cost_measure_8",
+ "guess": "human", "status": "decided", "model_score": 0.1459, "style_score": 0.6667,
+ "combined_score": 0.2501, "text_length": 114, "duration_ms": 19.08}
+{"content_id": "adf46c7b-a645-48f2-9a19-12f3dc9a76c3", "creator_id": "cost_measure_10",
+ "guess": "human", "status": "decided", "model_score": 0.1445, "style_score": 0.6667,
+ "combined_score": 0.2489, "text_length": 115, "duration_ms": 21.15}
+```
+
+**What It Costs**
+
+No API spend anywhere in this system — signal one is a local model, not a
+hosted one, so the real cost is **seconds of compute**, measured the same
+way `duration_ms` is: wall-clock time inside `app.py::submit`, read back
+from the audit log, not read off a pricing page.
+
+Two numbers, because this unit's own extension changes which one applies:
+
+- **A normally-scored submission (both signals run): ~0.024s.** Ten real
+  runs, `creator_id` `cost_measure_1` through `cost_measure_10`, same
+  ordinary sentence with only the run number changed, server already warm:
+  49.05, 23.64, 22.87, 21.56, 19.86, 19.41, 21.84, 19.08, 19.03, 21.15 ms.
+  Mean **23.75ms ≈ 0.0237s of CPU time per run** (the first of the ten ran
+  slightly high, still mid-request warm-up noise, not a cold start).
+- **A gated submission (the capstone extension, no model call at all):
+  ~0.0002s.** The Arabic entry above, 0.21ms — about 100× cheaper, because
+  the whole point of signal zero is that it decides before either real
+  signal spends any compute.
+- **One-time cost, not per-run: loading the model.** `RUNNING.md` already
+  documents this (10-20 seconds, once, the first submission after the
+  process starts) and entry 4 above shows it happening live — 4402ms on a
+  request that should have cost ~20ms, because the dev server's
+  auto-reloader had just restarted and GPT-2 had to load into memory again.
+  That's a real, measured cost too, just not a *per-run* one.
+
+**The arithmetic for a hundred people a day:** say each of 100 people
+submits 3 times a day (a plausible rate for someone drafting and revising,
+nowhere near the 8/minute rate limit) — 300 submissions/day. At the
+measured 0.0237s/run, that's **300 × 0.0237s ≈ 7.1 seconds of total CPU
+time per day**, assuming every one of those 300 is ordinary English text
+that needs both signals (the gate makes any non-Latin-script share of that
+traffic cheaper still, not more expensive). That's trivially cheap in raw
+compute — the real constraint this system has is memory to hold the model,
+not CPU time to run it, which is exactly what the Path B arithmetic above
+is about. I'm not converting this to a dollar figure: there's no metered
+spend running it locally, and inventing a specific cloud price per CPU-
+second here would be guessing, not measuring — the one thing this section
+is supposed to not do.
+
+---
