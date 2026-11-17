@@ -24,6 +24,7 @@ Routes:
     GET  /health      is the service up, and is the model loaded
 """
 
+import time
 import uuid
 
 from flask import Flask, jsonify, request
@@ -200,8 +201,17 @@ def submit():
     a malformed input is one of the most common real failures there is.
     """
     import detector
+    import script_gate
     import scoring
     import stylometry
+
+    # CAPSTONE instrumentation: every path out of this route — success,
+    # rejection, or the new script gate — logs how long the request took.
+    # Nothing before this line counts; everything after it does.
+    start = time.perf_counter()
+
+    def elapsed_ms() -> float:
+        return round((time.perf_counter() - start) * 1000, 2)
 
     payload = request.get_json(silent=True) or {}
 
@@ -211,7 +221,8 @@ def submit():
     # Same malformed-input rule as everything after it: reject with a 400
     # and log it rather than let the route crash.
     if not isinstance(payload, dict):
-        audit.log_rejection(creator_id="unknown", reason="body_not_an_object")
+        audit.log_rejection(creator_id="unknown", reason="body_not_an_object",
+                            duration_ms=elapsed_ms())
         return jsonify({
             "error": "bad_request",
             "message": "Request body must be a JSON object.",
@@ -219,6 +230,7 @@ def submit():
 
     text = payload.get("text")
     creator_id = payload.get("creator_id")
+    text_length = len(text) if isinstance(text, str) else None
 
     # Milestone 3's own TODO: decide what bad input does rather than let it
     # crash. Criterion 5 holds this to no 500s, ever. Every rejection still
@@ -226,26 +238,62 @@ def submit():
     # never find, and that applies to malformed-input probing too, not just
     # unit 8's rate limiting.
     if not isinstance(text, str) or not text.strip():
-        audit.log_rejection(creator_id=creator_id or "unknown", reason="missing_text")
+        audit.log_rejection(creator_id=creator_id or "unknown", reason="missing_text",
+                            duration_ms=elapsed_ms())
         return jsonify({
             "error": "bad_request",
             "message": "`text` is required and can't be empty.",
         }), 400
     if not isinstance(creator_id, str) or not creator_id.strip():
-        audit.log_rejection(creator_id="unknown", reason="missing_creator_id")
+        audit.log_rejection(creator_id="unknown", reason="missing_creator_id",
+                            text_length=text_length, duration_ms=elapsed_ms())
         return jsonify({
             "error": "bad_request",
             "message": "`creator_id` is required and can't be empty.",
         }), 400
     if len(text) > config.MAX_SUBMISSION_CHARS:
         audit.log_rejection(creator_id=creator_id, reason="text_too_long",
-                            length=len(text))
+                            length=len(text), duration_ms=elapsed_ms())
         return jsonify({
             "error": "bad_request",
             "message": f"`text` is over the {config.MAX_SUBMISSION_CHARS}-character limit.",
         }), 400
 
     content_id = str(uuid.uuid4())
+
+    # ── CAPSTONE EXTENSION: signal zero ─────────────────────────────────────
+    # Before either real signal runs, decide whether this text is even in a
+    # script they were built to read. See script_gate.py for why — the short
+    # version is unit 8's MF07, one Arabic sentence that scored 0.9438 `ai`.
+    # This is a genuinely new path, not a tweak to an existing one: it skips
+    # both signals entirely and returns a fourth label this service never
+    # had before, logged with its own status so it's never confused with a
+    # real decision.
+    if not script_gate.is_scorable_script(text):
+        latin_ratio, letters_seen = script_gate.latin_letter_ratio(text)
+        audit.log_decision(
+            content_id=content_id,
+            creator_id=creator_id,
+            guess="unscorable",
+            model_score=None,
+            style_score=None,
+            combined_score=None,
+            label=script_gate.UNSCORABLE_LABEL,
+            status="unscored",
+            text_length=text_length,
+            latin_ratio=round(latin_ratio, 4),
+            letters_seen=letters_seen,
+            duration_ms=elapsed_ms(),
+        )
+        return jsonify({
+            "content_id": content_id,
+            "guess": "unscorable",
+            "confidence": None,
+            "label": script_gate.UNSCORABLE_LABEL,
+            "model_score": None,
+            "style_score": None,
+        })
+    # ── end capstone extension ───────────────────────────────────────────────
 
     try:
         model_score = detector.model_signal(text)
@@ -254,7 +302,8 @@ def submit():
         # service problem, not the writer's fault — say so, and log it as a
         # rejection rather than pretending a decision happened.
         audit.log_rejection(creator_id=creator_id, reason="detector_unavailable",
-                            content_id=content_id, detail=str(exc))
+                            content_id=content_id, detail=str(exc),
+                            text_length=text_length, duration_ms=elapsed_ms())
         return jsonify({
             "error": "detector_unavailable",
             "message": "The detector model isn't available right now. Run "
@@ -264,7 +313,8 @@ def submit():
         # "text too short to score" from detector.perplexity — a few words,
         # not a crash-worthy input, but not scoreable either.
         audit.log_rejection(creator_id=creator_id, reason="text_too_short",
-                            content_id=content_id, detail=str(exc))
+                            content_id=content_id, detail=str(exc),
+                            text_length=text_length, duration_ms=elapsed_ms())
         return jsonify({
             "error": "bad_request",
             "message": "That's too short to score — a few sentences at least.",
@@ -289,6 +339,8 @@ def submit():
         combined_score=combined_score,
         label=label,
         status="decided",
+        text_length=text_length,
+        duration_ms=elapsed_ms(),
     )
 
     return jsonify({
