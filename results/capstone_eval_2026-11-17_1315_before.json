@@ -1,0 +1,1407 @@
+{
+  "1": [
+    {
+      "trial": 1,
+      "hit": 10,
+      "of": 10,
+      "results": [
+        {
+          "id": "ar1",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ar2",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ar3",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ar4",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ru1",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ru2",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ru3",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "el1",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "el2",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "el3",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "hit": 10,
+      "of": 10,
+      "results": [
+        {
+          "id": "ar1",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ar2",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ar3",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ar4",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ru1",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ru2",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ru3",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "el1",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "el2",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "el3",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "trial": 3,
+      "hit": 10,
+      "of": 10,
+      "results": [
+        {
+          "id": "ar1",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ar2",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ar3",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ar4",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ru1",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ru2",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "ru3",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "el1",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "el2",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        },
+        {
+          "id": "el3",
+          "status": 200,
+          "guess": "unscorable",
+          "ok": true
+        }
+      ]
+    }
+  ],
+  "2": [
+    {
+      "trial": 1,
+      "false_triggers": 0,
+      "of": 20,
+      "results": [
+        {
+          "id": "FP01",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP02",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP03",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP04",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP05",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP06",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP07",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP08",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain01",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain02",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain03",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain04",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain05",
+          "status": 200,
+          "guess": "human",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain06",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain07",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain08",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain09",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain10",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "calib_ai",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "calib_human",
+          "status": 200,
+          "guess": "human",
+          "false_trigger": false,
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "false_triggers": 0,
+      "of": 20,
+      "results": [
+        {
+          "id": "FP01",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP02",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP03",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP04",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP05",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP06",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP07",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP08",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain01",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain02",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain03",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain04",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain05",
+          "status": 200,
+          "guess": "human",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain06",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain07",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain08",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain09",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain10",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "calib_ai",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "calib_human",
+          "status": 200,
+          "guess": "human",
+          "false_trigger": false,
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "trial": 3,
+      "false_triggers": 0,
+      "of": 20,
+      "results": [
+        {
+          "id": "FP01",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP02",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP03",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP04",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP05",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP06",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP07",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "FP08",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain01",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain02",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain03",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain04",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain05",
+          "status": 200,
+          "guess": "human",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain06",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain07",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain08",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain09",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "plain10",
+          "status": 200,
+          "guess": "unsure",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "calib_ai",
+          "status": 200,
+          "guess": "ai",
+          "false_trigger": false,
+          "duration_ms": null
+        },
+        {
+          "id": "calib_human",
+          "status": 200,
+          "guess": "human",
+          "false_trigger": false,
+          "duration_ms": null
+        }
+      ]
+    }
+  ],
+  "3": [
+    {
+      "trial": 1,
+      "hit": 10,
+      "of": 10,
+      "results": [
+        {
+          "id": "ar1",
+          "duration_ms": 0.04,
+          "ok": true
+        },
+        {
+          "id": "ar2",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "ar3",
+          "duration_ms": 0.02,
+          "ok": true
+        },
+        {
+          "id": "ar4",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "ru1",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "ru2",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "ru3",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "el1",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "el2",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "el3",
+          "duration_ms": 0.04,
+          "ok": true
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "hit": 10,
+      "of": 10,
+      "results": [
+        {
+          "id": "ar1",
+          "duration_ms": 0.04,
+          "ok": true
+        },
+        {
+          "id": "ar2",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "ar3",
+          "duration_ms": 0.02,
+          "ok": true
+        },
+        {
+          "id": "ar4",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "ru1",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "ru2",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "ru3",
+          "duration_ms": 0.02,
+          "ok": true
+        },
+        {
+          "id": "el1",
+          "duration_ms": 0.04,
+          "ok": true
+        },
+        {
+          "id": "el2",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "el3",
+          "duration_ms": 0.04,
+          "ok": true
+        }
+      ]
+    },
+    {
+      "trial": 3,
+      "hit": 10,
+      "of": 10,
+      "results": [
+        {
+          "id": "ar1",
+          "duration_ms": 0.04,
+          "ok": true
+        },
+        {
+          "id": "ar2",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "ar3",
+          "duration_ms": 0.02,
+          "ok": true
+        },
+        {
+          "id": "ar4",
+          "duration_ms": 0.02,
+          "ok": true
+        },
+        {
+          "id": "ru1",
+          "duration_ms": 0.02,
+          "ok": true
+        },
+        {
+          "id": "ru2",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "ru3",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "el1",
+          "duration_ms": 0.04,
+          "ok": true
+        },
+        {
+          "id": "el2",
+          "duration_ms": 0.03,
+          "ok": true
+        },
+        {
+          "id": "el3",
+          "duration_ms": 0.04,
+          "ok": true
+        }
+      ]
+    }
+  ],
+  "4": [
+    {
+      "trial": 1,
+      "hit": 10,
+      "of": 10,
+      "results": [
+        {
+          "id": "edge01",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge02",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge03",
+          "status": 400,
+          "guess": null,
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge04",
+          "status": 200,
+          "guess": "unsure",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge05",
+          "status": 400,
+          "guess": null,
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge06",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge07",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge08",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge09",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge10",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "hit": 10,
+      "of": 10,
+      "results": [
+        {
+          "id": "edge01",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge02",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge03",
+          "status": 400,
+          "guess": null,
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge04",
+          "status": 200,
+          "guess": "unsure",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge05",
+          "status": 400,
+          "guess": null,
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge06",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge07",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge08",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge09",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge10",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        }
+      ]
+    },
+    {
+      "trial": 3,
+      "hit": 10,
+      "of": 10,
+      "results": [
+        {
+          "id": "edge01",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge02",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge03",
+          "status": 400,
+          "guess": null,
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge04",
+          "status": 200,
+          "guess": "unsure",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge05",
+          "status": 400,
+          "guess": null,
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge06",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge07",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge08",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge09",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        },
+        {
+          "id": "edge10",
+          "status": 200,
+          "guess": "human",
+          "crashed": false,
+          "gated": false,
+          "ok": true
+        }
+      ]
+    }
+  ],
+  "5": [
+    {
+      "trial": 1,
+      "hit": 20,
+      "of": 20,
+      "results": [
+        {
+          "id": "FP01",
+          "duration_ms": 38.48,
+          "ok": true
+        },
+        {
+          "id": "FP02",
+          "duration_ms": 32.13,
+          "ok": true
+        },
+        {
+          "id": "FP03",
+          "duration_ms": 32.18,
+          "ok": true
+        },
+        {
+          "id": "FP04",
+          "duration_ms": 30.26,
+          "ok": true
+        },
+        {
+          "id": "FP05",
+          "duration_ms": 30.42,
+          "ok": true
+        },
+        {
+          "id": "FP06",
+          "duration_ms": 29.94,
+          "ok": true
+        },
+        {
+          "id": "FP07",
+          "duration_ms": 31.95,
+          "ok": true
+        },
+        {
+          "id": "FP08",
+          "duration_ms": 14.33,
+          "ok": true
+        },
+        {
+          "id": "plain01",
+          "duration_ms": 14.43,
+          "ok": true
+        },
+        {
+          "id": "plain02",
+          "duration_ms": 14.29,
+          "ok": true
+        },
+        {
+          "id": "plain03",
+          "duration_ms": 14.2,
+          "ok": true
+        },
+        {
+          "id": "plain04",
+          "duration_ms": 14.34,
+          "ok": true
+        },
+        {
+          "id": "plain05",
+          "duration_ms": 14.13,
+          "ok": true
+        },
+        {
+          "id": "plain06",
+          "duration_ms": 14.25,
+          "ok": true
+        },
+        {
+          "id": "plain07",
+          "duration_ms": 14.12,
+          "ok": true
+        },
+        {
+          "id": "plain08",
+          "duration_ms": 18.48,
+          "ok": true
+        },
+        {
+          "id": "plain09",
+          "duration_ms": 18.5,
+          "ok": true
+        },
+        {
+          "id": "plain10",
+          "duration_ms": 18.34,
+          "ok": true
+        },
+        {
+          "id": "calib_ai",
+          "duration_ms": 23.86,
+          "ok": true
+        },
+        {
+          "id": "calib_human",
+          "duration_ms": 22.25,
+          "ok": true
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "hit": 20,
+      "of": 20,
+      "results": [
+        {
+          "id": "FP01",
+          "duration_ms": 40.45,
+          "ok": true
+        },
+        {
+          "id": "FP02",
+          "duration_ms": 32.14,
+          "ok": true
+        },
+        {
+          "id": "FP03",
+          "duration_ms": 32.25,
+          "ok": true
+        },
+        {
+          "id": "FP04",
+          "duration_ms": 30.18,
+          "ok": true
+        },
+        {
+          "id": "FP05",
+          "duration_ms": 30.13,
+          "ok": true
+        },
+        {
+          "id": "FP06",
+          "duration_ms": 29.92,
+          "ok": true
+        },
+        {
+          "id": "FP07",
+          "duration_ms": 29.79,
+          "ok": true
+        },
+        {
+          "id": "FP08",
+          "duration_ms": 14.19,
+          "ok": true
+        },
+        {
+          "id": "plain01",
+          "duration_ms": 14.37,
+          "ok": true
+        },
+        {
+          "id": "plain02",
+          "duration_ms": 14.19,
+          "ok": true
+        },
+        {
+          "id": "plain03",
+          "duration_ms": 14.08,
+          "ok": true
+        },
+        {
+          "id": "plain04",
+          "duration_ms": 14.27,
+          "ok": true
+        },
+        {
+          "id": "plain05",
+          "duration_ms": 14.03,
+          "ok": true
+        },
+        {
+          "id": "plain06",
+          "duration_ms": 14.28,
+          "ok": true
+        },
+        {
+          "id": "plain07",
+          "duration_ms": 14.05,
+          "ok": true
+        },
+        {
+          "id": "plain08",
+          "duration_ms": 18.42,
+          "ok": true
+        },
+        {
+          "id": "plain09",
+          "duration_ms": 18.47,
+          "ok": true
+        },
+        {
+          "id": "plain10",
+          "duration_ms": 18.38,
+          "ok": true
+        },
+        {
+          "id": "calib_ai",
+          "duration_ms": 23.85,
+          "ok": true
+        },
+        {
+          "id": "calib_human",
+          "duration_ms": 22.29,
+          "ok": true
+        }
+      ]
+    },
+    {
+      "trial": 3,
+      "hit": 20,
+      "of": 20,
+      "results": [
+        {
+          "id": "FP01",
+          "duration_ms": 38.11,
+          "ok": true
+        },
+        {
+          "id": "FP02",
+          "duration_ms": 32.02,
+          "ok": true
+        },
+        {
+          "id": "FP03",
+          "duration_ms": 32.14,
+          "ok": true
+        },
+        {
+          "id": "FP04",
+          "duration_ms": 30.12,
+          "ok": true
+        },
+        {
+          "id": "FP05",
+          "duration_ms": 30.12,
+          "ok": true
+        },
+        {
+          "id": "FP06",
+          "duration_ms": 29.9,
+          "ok": true
+        },
+        {
+          "id": "FP07",
+          "duration_ms": 29.87,
+          "ok": true
+        },
+        {
+          "id": "FP08",
+          "duration_ms": 14.08,
+          "ok": true
+        },
+        {
+          "id": "plain01",
+          "duration_ms": 14.4,
+          "ok": true
+        },
+        {
+          "id": "plain02",
+          "duration_ms": 14.27,
+          "ok": true
+        },
+        {
+          "id": "plain03",
+          "duration_ms": 14.11,
+          "ok": true
+        },
+        {
+          "id": "plain04",
+          "duration_ms": 14.27,
+          "ok": true
+        },
+        {
+          "id": "plain05",
+          "duration_ms": 14.11,
+          "ok": true
+        },
+        {
+          "id": "plain06",
+          "duration_ms": 14.32,
+          "ok": true
+        },
+        {
+          "id": "plain07",
+          "duration_ms": 14.03,
+          "ok": true
+        },
+        {
+          "id": "plain08",
+          "duration_ms": 18.34,
+          "ok": true
+        },
+        {
+          "id": "plain09",
+          "duration_ms": 18.46,
+          "ok": true
+        },
+        {
+          "id": "plain10",
+          "duration_ms": 18.34,
+          "ok": true
+        },
+        {
+          "id": "calib_ai",
+          "duration_ms": 23.87,
+          "ok": true
+        },
+        {
+          "id": "calib_human",
+          "duration_ms": 22.3,
+          "ok": true
+        }
+      ]
+    }
+  ]
+}
