@@ -114,3 +114,111 @@ Submitting `text` that's missing, an empty string, or over 5,000 words never ret
      A number you missed stays where it is, gets diagnosed, and gets a fix
      attempted. That's where the points are.
      ───────────────────────────────────────────────────────────────────────── -->
+
+---
+
+# Capstone — Acceptance Criteria
+
+Five new criteria, written before I ran any of them, for the capstone
+extension to this same service: `script_gate.py`, the check that runs
+before either existing signal and routes non-Latin-script text to a new
+`unscorable` label instead of letting GPT-2 and the style signal make a
+confident, unfounded claim about a script neither was built to read.
+Numbered fresh (1-5) rather than continuing units 7/8's numbering, since
+these are testing a different, newly-added piece of the system — see the
+**Capstone** section of `README.md` for what's new and what's deliberately
+out of scope.
+
+Four of the five are about the extension itself. The fifth uses this
+unit's other new piece — `duration_ms`, now on every log entry — to put a
+number on the system as it already stood, since that's real, measurable
+evidence this unit produced and not every criterion should be about the
+newest code.
+
+---
+
+## 1. Non-Latin-script text is routed away from both signals
+
+Of 10 real sentences written in non-Latin scripts (a mix of Arabic,
+Russian, and Greek, each with at least 5 letters), all 10 are returned
+with `guess: "unscorable"` and `status: "unscored"` in the audit log,
+holding across 3 trials.
+
+**Why this target:** this check is pure Python over Unicode character
+names — no model call, nothing that can vary run to run — so 10 of 10 is
+the right bar the same way unit 7's criterion 4 (the appeal path) argued
+100% for deterministic logic with no legitimate reason to be flaky. This
+is also the entire reason the extension exists: unit 8's attack run found
+one real Arabic sentence scoring 0.9438 `ai` with the gate absent. A
+criterion here that tolerated misses would be tolerating exactly the
+failure this unit was built to close.
+
+---
+
+## 2. Real English writing never gets falsely gated
+
+Across 20 pieces of real English writing spanning plain, formal, and
+short registers (reusing real text from unit 8's own `false_positive`
+attack family and plain-writing calibration set, not fresh placeholder
+text), zero are routed to the `unscorable` path, holding across 3 trials.
+
+**Why this target:** the gate only earns its place if it never swallows a
+genuine English submission that both real signals could have scored. That
+failure is quieter than a wrong `ai` accusation but it's still a real
+writer getting a non-answer instead of a label. 0 of 20, not "mostly 0" —
+a false trigger here is a logic bug in the gate, not the kind of
+structural blind spot units 7/8's criteria had to make peace with in the
+two existing signals.
+
+---
+
+## 3. The gate is cheap, not just correct
+
+Every gated (non-Latin-script) submission completes in under 5ms end to
+end, measured by the new `duration_ms` field, across 10 real non-Latin
+submissions.
+
+**Why this target:** the architectural point of checking script *before*
+either signal runs is that the check should cost next to nothing — if it
+cost meaningfully more than a few milliseconds, it wouldn't be a clean win
+over just running both signals and discarding the result. 5ms is generous
+against what I actually measured while building this (0.21ms), on
+purpose: the target should survive someone later swapping in a slower
+script check, not just describe today's number back at itself.
+
+---
+
+## 4. Short non-Latin snippets fall through safely, and never crash the route
+
+10 constructed edge cases — non-Latin text with 1 to 4 letters total,
+mixed with digits, punctuation, or emoji — all fall through to normal
+scoring (never routed to `unscorable`, and never a `500`), holding across
+3 trials.
+
+**Why this target:** `script_gate.MIN_LETTERS_TO_JUDGE` exists specifically
+so a two-letter submission doesn't get a script verdict off noise that
+small — but a boundary guard like that is exactly the kind of thing that's
+easy to get backwards (off-by-one, the comparison flipped) without testing
+it directly rather than just reading the code and assuming it's right.
+This is the extension's own bad-input case, the same category unit 8's
+criterion 5 covered for the rest of the route — a new code path gets a new
+version of that same question.
+
+---
+
+## 5. Scoring latency stays well inside what the rate limit assumes
+
+At least 18 of 20 real, successfully-scored (non-gated) submissions
+complete in under 100ms once the server is warm, measured by
+`duration_ms`.
+
+**Why this target:** the one criterion here about the system as it
+already stood, not the extension — included because `duration_ms` is new
+this unit and deserves at least one criterion of its own, not just a
+number pasted into *What It Costs* with nothing to measure it against.
+100ms matters concretely against something real: unit 8's own rate limit
+is 8 requests/minute, so the server could never become the bottleneck a
+real writer notices unless a single request ran closer to a full second.
+18 of 20, not 20 — this path genuinely calls GPT-2, which can jitter under
+background load on a shared laptop in a way the gate's pure-Python path in
+criterion 3 can't.
