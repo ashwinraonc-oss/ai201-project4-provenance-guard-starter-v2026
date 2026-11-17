@@ -38,13 +38,27 @@ MIN_LETTERS_TO_JUDGE = 5
 # a script neither signal was built around.
 MIN_LATIN_RATIO = 0.5
 
+# CAPSTONE Milestone 6: the ratio used to scan every letter in the
+# submission, so its cost scaled with length — fine for a short sentence
+# (~0.03ms measured), but ~3ms on a ~28,000-character submission near
+# config.MAX_SUBMISSION_CHARS. Still cheap in absolute terms, but a
+# document's script doesn't usually change partway through, so there's no
+# real information in the 25,998th letter that the first 2,000 didn't
+# already give. Capping the scan keeps every realistic case (every
+# calibration text and attack-set entry in this repo is under 1,000
+# characters) byte-for-byte identical, and turns the worst case from
+# O(length) into a small constant. See README's Capstone "The Improvement"
+# for the before/after measurement.
+MAX_LETTERS_TO_SCAN = 2000
+
 
 def latin_letter_ratio(text: str) -> tuple[float, int]:
     """
     (fraction of the text's letters that are Latin-script, how many letters
-    there were in total). Punctuation, digits, whitespace, and emoji don't
-    count toward either number — this is about script, not character
-    variety.
+    were actually examined — capped at MAX_LETTERS_TO_SCAN, not necessarily
+    the letter count of the whole submission). Punctuation, digits,
+    whitespace, and emoji don't count toward either number — this is about
+    script, not character variety.
 
     A letter's Unicode name starts with its script — "LATIN SMALL LETTER A",
     "ARABIC LETTER ALEF", "CYRILLIC SMALL LETTER A" — which is a simpler and
@@ -53,6 +67,8 @@ def latin_letter_ratio(text: str) -> tuple[float, int]:
     total = 0
     latin = 0
     for ch in text:
+        if total >= MAX_LETTERS_TO_SCAN:
+            break
         if not ch.isalpha():
             continue
         total += 1
